@@ -1174,6 +1174,19 @@ function closeStickerModal() {
   document.getElementById('stickerModal')?.classList.add('hidden');
 }
 
+function shortcutScanKelurahanFromModal() {
+  const pkgId = document.getElementById('stickerId')?.innerText?.trim();
+  closeStickerModal();
+  if (window.tracesStore) {
+    window.tracesStore.setRole('KELURAHAN');
+    if (pkgId) {
+      setTimeout(() => {
+        executeScanKelurahan(pkgId);
+      }, 300);
+    }
+  }
+}
+
 // ==========================================
 // 📜 BLOCKCHAIN AUDIT TRAIL MODAL
 // ==========================================
