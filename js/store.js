@@ -1,11 +1,37 @@
 /**
  * TRACES-CO - Store & State Management
- * Sinkronisasi state lokal (localStorage) dengan event dispatcher
+ * Sinkronisasi state lokal (localStorage + in-memory fallback)
  */
 
 const STORAGE_KEY = "TRACES_CO_BANSOS_PACKAGES_V1";
 const ROLE_KEY = "TRACES_CO_ACTIVE_ROLE";
 const ACTIVE_CITIZEN_KEY = "TRACES_CO_ACTIVE_CITIZEN_ID";
+
+// In-Memory Storage Fallback jika localStorage diblokir oleh browser / iframe
+const memoryStore = {};
+
+function safeStorageGet(key) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch (e) {
+    console.warn("Storage restricted, using in-memory store:", e.message);
+  }
+  return memoryStore[key] || null;
+}
+
+function safeStorageSet(key, value) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+      return;
+    }
+  } catch (e) {
+    console.warn("Storage restricted, using in-memory store:", e.message);
+  }
+  memoryStore[key] = value;
+}
 
 // Simulasi Pseudo-Hash SHA-256 untuk Audit Trail Blockchain
 function generateSimulatedHash(seedStr) {
@@ -45,12 +71,12 @@ class BansosStore {
   }
 
   init() {
-    const savedData = localStorage.getItem(STORAGE_KEY);
+    const savedData = safeStorageGet(STORAGE_KEY);
     if (savedData) {
       try {
         this.packages = JSON.parse(savedData);
       } catch (e) {
-        console.error("Gagal parse localStorage, memuat data default", e);
+        console.error("Gagal parse saved data, memuat data default", e);
         this.packages = JSON.parse(JSON.stringify(DEFAULT_PACKAGES));
       }
     } else {
@@ -58,24 +84,30 @@ class BansosStore {
       this.save();
     }
 
-    const savedRole = localStorage.getItem(ROLE_KEY);
+    const savedRole = safeStorageGet(ROLE_KEY);
     if (savedRole && ["PEMERINTAH", "KELURAHAN", "PENERIMA"].includes(savedRole)) {
       this.activeRole = savedRole;
     }
 
-    const savedCitizen = localStorage.getItem(ACTIVE_CITIZEN_KEY);
+    const savedCitizen = safeStorageGet(ACTIVE_CITIZEN_KEY);
     if (savedCitizen && this.getPackageById(savedCitizen)) {
       this.activeCitizenId = savedCitizen;
     }
   }
 
   save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.packages));
+    safeStorageSet(STORAGE_KEY, JSON.stringify(this.packages));
     this.notify();
   }
 
   notify() {
-    this.listeners.forEach(fn => fn(this.packages, this.activeRole, this.activeCitizenId));
+    this.listeners.forEach(fn => {
+      try {
+        fn(this.packages, this.activeRole, this.activeCitizenId);
+      } catch (err) {
+        console.error("Error in store listener:", err);
+      }
+    });
   }
 
   subscribe(listener) {
@@ -88,7 +120,7 @@ class BansosStore {
   setRole(role) {
     if (["PEMERINTAH", "KELURAHAN", "PENERIMA"].includes(role)) {
       this.activeRole = role;
-      localStorage.setItem(ROLE_KEY, role);
+      safeStorageSet(ROLE_KEY, role);
       this.notify();
     }
   }
@@ -97,7 +129,7 @@ class BansosStore {
     const pkg = this.getPackageById(packageId);
     if (pkg) {
       this.activeCitizenId = packageId;
-      localStorage.setItem(ACTIVE_CITIZEN_KEY, packageId);
+      safeStorageSet(ACTIVE_CITIZEN_KEY, packageId);
       this.notify();
     }
   }
@@ -322,10 +354,9 @@ class BansosStore {
     if (!pkg || !pkg.laporan) return { success: false, message: "Laporan tidak ditemukan!" };
 
     const timestamp = getFormattedTime();
-    pkg.laporan.statusTindakLanjut = solusi; // 'PAKET_PENGGANTI_DIKIRIM' | 'SELESAI_DAMAI'
+    pkg.laporan.statusTindakLanjut = solusi;
     pkg.laporan.catatanAdmin = catatanAdmin;
 
-    // Jika diganti paket, kembalikan status ke DITERIMA_KELURAHAN atau SELESAI
     if (solusi === 'SELESAI_DAMAI') {
       pkg.status = "SELESAI";
     }

@@ -28,7 +28,7 @@ class GPSTracker {
           <svg class="w-12 h-12 mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 16.382V5.618a2 2 0 011.447-1.894L9 1m0 19l6-3m-6 3V1m6 19l5.447-2.724A2 2 0 0021 16.382V5.618a2 2 0 00-1.447-1.894L15 1m0 19V1m0 0L9 4"></path>
           </svg>
-          <p class="font-medium">Pilih paket dengan status "Dalam Pengiriman" untuk melihat modul GPS Live.</p>
+          <p class="font-medium text-xs">Pilih paket dengan status "Dalam Pengiriman" untuk melihat modul GPS Live.</p>
         </div>
       `;
       this.updateTelemetry(null);
@@ -36,12 +36,17 @@ class GPSTracker {
     }
 
     // Hitung posisi awal (Kelurahan) dan tujuan (Penerima)
-    const origin = [pkg.kelurahanAsal.lat, pkg.kelurahanAsal.lng];
-    const dest = [pkg.penerima.lat, pkg.penerima.lng];
+    const origin = [pkg.kelurahanAsal?.lat || -6.1945, pkg.kelurahanAsal?.lng || 106.8315];
+    const dest = [pkg.penerima?.lat || -6.1985, pkg.penerima?.lng || 106.8402];
 
-    // Cek ketersediaan Leaflet
-    if (window.L) {
-      this.renderLeafletMap(container, origin, dest, pkg);
+    // Cek ketersediaan Leaflet dengan fallback aman
+    if (window.L && typeof window.L.map === 'function') {
+      try {
+        this.renderLeafletMap(container, origin, dest, pkg);
+      } catch (err) {
+        console.warn("Leaflet error, menggunakan fallback peta taktis vektor:", err);
+        this.renderFallbackMap(container, origin, dest, pkg);
+      }
     } else {
       this.renderFallbackMap(container, origin, dest, pkg);
     }
@@ -50,11 +55,31 @@ class GPSTracker {
   }
 
   renderLeafletMap(container, origin, dest, pkg) {
+    // 1. Bersihkan instance map lama dan _leaflet_id untuk mencegah error "Map container is already initialized"
     if (this.map) {
-      this.map.remove();
+      try {
+        this.map.remove();
+      } catch (e) {}
       this.map = null;
     }
+
+    if (container._leaflet_id) {
+      try {
+        delete container._leaflet_id;
+      } catch (e) {
+        container._leaflet_id = null;
+      }
+    }
+
     container.innerHTML = '';
+
+    // Cek ukuran kontainer agar Leaflet tidak menghitung batas NaN
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Jika parent belum sepenuhnya terlihat (misal tab baru dibuka)
+      this.renderFallbackMap(container, origin, dest, pkg);
+      return;
+    }
 
     const midLat = (origin[0] + dest[0]) / 2;
     const midLng = (origin[1] + dest[1]) / 2;
@@ -64,36 +89,40 @@ class GPSTracker {
       attributionControl: false
     }).setView([midLat, midLng], 15);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(this.map);
+    try {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(this.map);
+    } catch (e) {
+      console.warn("Tile layer warning:", e);
+    }
 
     // Custom Icon Posko Kelurahan
     const kelurahanIcon = L.divIcon({
       className: 'custom-map-marker',
       html: `
-        <div class="relative flex items-center justify-center w-10 h-10 bg-blue-900 text-white rounded-full border-2 border-white shadow-lg">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="relative flex items-center justify-center w-9 h-9 bg-blue-900 text-white rounded-full border-2 border-white shadow-lg">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
           </svg>
         </div>
       `,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20]
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
     });
 
     // Custom Icon Rumah Penerima
     const destIcon = L.divIcon({
       className: 'custom-map-marker',
       html: `
-        <div class="relative flex items-center justify-center w-10 h-10 bg-emerald-600 text-white rounded-full border-2 border-white shadow-lg animate-bounce">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="relative flex items-center justify-center w-9 h-9 bg-emerald-600 text-white rounded-full border-2 border-white shadow-lg animate-bounce">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
           </svg>
         </div>
       `,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20]
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
     });
 
     // Custom Icon Kurir Bansos dengan Radar Pulse
@@ -101,21 +130,21 @@ class GPSTracker {
       className: 'custom-courier-marker',
       html: `
         <div class="relative flex items-center justify-center">
-          <div class="absolute w-12 h-12 bg-emerald-400 rounded-full animate-ping opacity-75"></div>
-          <div class="relative flex items-center justify-center w-11 h-11 bg-emerald-700 text-white rounded-full border-2 border-white shadow-xl">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="absolute w-10 h-10 bg-emerald-400 rounded-full animate-ping opacity-75"></div>
+          <div class="relative flex items-center justify-center w-9 h-9 bg-emerald-700 text-white rounded-full border-2 border-white shadow-xl">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
         </div>
       `,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
     });
 
     // Pasang Marker Kelurahan & Penerima
     this.originMarker = L.marker(origin, { icon: kelurahanIcon }).addTo(this.map)
-      .bindPopup(`<b>${pkg.kelurahanAsal.nama}</b><br>Titik Awal Distribusi Bansos`);
+      .bindPopup(`<b>${pkg.kelurahanAsal?.nama || 'Kelurahan'}</b><br>Titik Awal Distribusi Bansos`);
 
     this.destMarker = L.marker(dest, { icon: destIcon }).addTo(this.map)
       .bindPopup(`<b>Alamat Penerima: ${pkg.penerima.nama}</b><br>${pkg.penerima.alamat}`);
@@ -130,7 +159,7 @@ class GPSTracker {
 
     this.routePolyline = L.polyline(points, {
       color: '#2563EB',
-      weight: 5,
+      weight: 4,
       opacity: 0.8,
       dashArray: '8, 8'
     }).addTo(this.map);
@@ -142,44 +171,53 @@ class GPSTracker {
     this.courierMarker = L.marker([curLat, curLng], { icon: courierIcon }).addTo(this.map)
       .bindPopup(`<b>Kurir Bansos: ${pkg.kurir?.nama || 'Petugas'}</b><br>Armada: ${pkg.kurir?.kendaraan || 'Logistik'}`);
 
-    // Fit bounds
-    const bounds = L.latLngBounds([origin, dest]);
-    this.map.fitBounds(bounds, { padding: [50, 50] });
+    try {
+      const bounds = L.latLngBounds([origin, dest]);
+      this.map.fitBounds(bounds, { padding: [40, 40] });
+    } catch (e) {}
   }
 
   renderFallbackMap(container, origin, dest, pkg) {
+    if (this.map) {
+      try { this.map.remove(); } catch(e){}
+      this.map = null;
+    }
+    if (container._leaflet_id) {
+      delete container._leaflet_id;
+    }
+
     container.innerHTML = `
       <div class="relative w-full h-full bg-slate-900 overflow-hidden rounded-xl border border-slate-700 p-4 select-none">
         <!-- Grid pattern -->
         <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:20px_20px] opacity-40"></div>
         
         <!-- Radar Circles -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-blue-500/20 rounded-full animate-pulse"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 border border-emerald-500/20 rounded-full"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-blue-500/20 rounded-full animate-pulse"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-emerald-500/20 rounded-full"></div>
         
-        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 600 350">
+        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 600 320" preserveAspectRatio="none">
           <!-- Route Line -->
-          <path d="M 80,180 Q 250,90 320,170 T 520,180" fill="none" stroke="#2563EB" stroke-width="4" stroke-dasharray="8 6"/>
+          <path d="M 80,160 Q 250,80 320,150 T 520,160" fill="none" stroke="#2563EB" stroke-width="4" stroke-dasharray="8 6"/>
           
           <!-- Origin (Kelurahan) -->
-          <circle cx="80" cy="180" r="14" fill="#0B2545" stroke="#60A5FA" stroke-width="3"/>
-          <text x="80" y="215" fill="#93C5FD" font-size="12" font-weight="bold" text-anchor="middle">Kantor Kelurahan</text>
+          <circle cx="80" cy="160" r="14" fill="#0B2545" stroke="#60A5FA" stroke-width="3"/>
+          <text x="80" y="195" fill="#93C5FD" font-size="11" font-weight="bold" text-anchor="middle">Kantor Kelurahan</text>
           
           <!-- Target (Penerima) -->
-          <circle cx="520" cy="180" r="16" fill="#059669" stroke="#A7F3D0" stroke-width="3"/>
-          <text x="520" y="215" fill="#34D399" font-size="12" font-weight="bold" text-anchor="middle">Rumah ${pkg.penerima.nama}</text>
+          <circle cx="520" cy="160" r="14" fill="#059669" stroke="#A7F3D0" stroke-width="3"/>
+          <text x="520" y="195" fill="#34D399" font-size="11" font-weight="bold" text-anchor="middle">Rumah ${pkg.penerima?.nama || 'Warga'}</text>
           
           <!-- Moving Courier -->
-          <g transform="translate(${80 + 440 * this.progress}, ${180 + Math.sin(this.progress * Math.PI) * -35})">
-            <circle cx="0" cy="0" r="20" fill="#10B981" opacity="0.4" class="animate-ping"/>
-            <circle cx="0" cy="0" r="14" fill="#047857" stroke="#FFFFFF" stroke-width="2.5"/>
-            <path d="M -5,-3 L 5,-3 L 0,6 Z" fill="#FFFFFF"/>
-            <text x="0" y="-22" fill="#FACC15" font-size="11" font-weight="bold" text-anchor="middle">Kurir Bansos</text>
+          <g transform="translate(${80 + 440 * this.progress}, ${160 + Math.sin(this.progress * Math.PI) * -35})">
+            <circle cx="0" cy="0" r="18" fill="#10B981" opacity="0.4" class="animate-ping"/>
+            <circle cx="0" cy="0" r="12" fill="#047857" stroke="#FFFFFF" stroke-width="2.5"/>
+            <path d="M -4,-3 L 4,-3 L 0,5 Z" fill="#FFFFFF"/>
+            <text x="0" y="-18" fill="#FACC15" font-size="10" font-weight="bold" text-anchor="middle">Kurir Bansos</text>
           </g>
         </svg>
 
-        <div class="absolute bottom-3 left-3 bg-slate-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
-          🛰️ Mode Navigasi Taktis Vektor (GPS Akurasi Tinggi)
+        <div class="absolute bottom-2 left-2 bg-slate-800/90 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-700 text-[10px] text-slate-300">
+          🛰️ Mode Navigasi Taktis Vektor (Real-Time GPS Tracking)
         </div>
       </div>
     `;
@@ -192,7 +230,7 @@ class GPSTracker {
     if (!pkg || !pkg.kurir) {
       el.innerHTML = `
         <div class="text-xs text-slate-500 italic p-3 text-center">
-          Tidak ada data telemetri kurir aktif.
+          Tidak ada data telemetri kurir aktif untuk paket ini.
         </div>
       `;
       return;
@@ -206,8 +244,8 @@ class GPSTracker {
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
           <div class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Kurir Petugas</div>
-          <div class="text-sm font-bold text-slate-800 truncate">${pkg.kurir.nama}</div>
-          <div class="text-xs text-slate-500 truncate">${pkg.kurir.kendaraan}</div>
+          <div class="text-sm font-bold text-slate-800 truncate">${pkg.kurir.nama || 'Petugas'}</div>
+          <div class="text-xs text-slate-500 truncate">${pkg.kurir.kendaraan || 'Armada'}</div>
         </div>
 
         <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
@@ -235,7 +273,6 @@ class GPSTracker {
     `;
   }
 
-  // Aksi simulasi maju pergerakan kurir
   stepForward(percent = 0.25) {
     if (!this.currentPackage) return;
     this.progress = Math.min(1.0, this.progress + percent);
@@ -245,8 +282,8 @@ class GPSTracker {
       if (window.tracesStore) {
         window.tracesStore.updateKurirLocation(
           this.currentPackage.id,
-          this.currentPackage.penerima.lat,
-          this.currentPackage.penerima.lng,
+          this.currentPackage.penerima?.lat || -6.1985,
+          this.currentPackage.penerima?.lng || 106.8402,
           "Telah Tiba di Alamat"
         );
       }

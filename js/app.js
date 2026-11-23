@@ -3,7 +3,7 @@
  * Mengendalikan UI interaktif 3 Role: Pemerintah, Kelurahan, Penerima Bantuan
  */
 
-// --- 1. WEB AUDIO SYNTHESIZER (Tanpa File Eksternal) ---
+// --- 1. WEB AUDIO SYNTHESIZER ---
 class SoundEffects {
   constructor() {
     this.ctx = null;
@@ -11,9 +11,16 @@ class SoundEffects {
   }
 
   init() {
-    if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioCtx();
+    try {
+      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch (e) {
+      this.ctx = null;
     }
   }
 
@@ -25,7 +32,7 @@ class SoundEffects {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, this.ctx.currentTime); // A5 note
+      osc.frequency.setValueAtTime(880, this.ctx.currentTime);
       gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
       osc.connect(gain);
@@ -40,7 +47,6 @@ class SoundEffects {
     this.init();
     if (!this.ctx) return;
     try {
-      // Arpeggio C5 -> E5 -> G5 -> C6
       const notes = [523.25, 659.25, 783.99, 1046.50];
       notes.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
@@ -82,61 +88,57 @@ const sfx = new SoundEffects();
 // --- 2. SIGNATURE PAD CONTROLLER ---
 class SignaturePad {
   constructor(canvasId) {
-    this.canvas = document.getElementById(canvasId);
-    this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+    this.canvasId = canvasId;
+    this.canvas = null;
+    this.ctx = null;
     this.isDrawing = false;
     this.hasSignature = false;
-    this.init();
   }
 
   init() {
+    this.canvas = document.getElementById(this.canvasId);
     if (!this.canvas) return;
 
-    // Set resolusi tajam
+    this.ctx = this.canvas.getContext('2d');
     const rect = this.canvas.getBoundingClientRect();
-    this.canvas.width = rect.width * 2;
-    this.canvas.height = rect.height * 2;
+    const w = rect.width > 0 ? rect.width : 340;
+    const h = rect.height > 0 ? rect.height : 140;
+
+    this.canvas.width = w * 2;
+    this.canvas.height = h * 2;
     this.ctx.scale(2, 2);
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
-    this.ctx.strokeStyle = '#047857'; // Emerald signature
+    this.ctx.strokeStyle = '#047857';
     this.ctx.lineWidth = 2.5;
 
     // Mouse Events
-    this.canvas.addEventListener('mousedown', (e) => this.start(e));
-    this.canvas.addEventListener('mousemove', (e) => this.draw(e));
-    this.canvas.addEventListener('mouseup', () => this.stop());
-    this.canvas.addEventListener('mouseleave', () => this.stop());
+    this.canvas.onmousedown = (e) => this.start(e);
+    this.canvas.onmousemove = (e) => this.draw(e);
+    this.canvas.onmouseup = () => this.stop();
+    this.canvas.onmouseleave = () => this.stop();
 
-    // Touch Events untuk Mobile Screen
-    this.canvas.addEventListener('touchstart', (e) => {
+    // Touch Events
+    this.canvas.ontouchstart = (e) => {
       e.preventDefault();
       const touch = e.touches[0];
-      const mouseEvent = new MouseEvent('mousedown', {
-        clientX: touch.clientX,
-        clientY: touch.clientY
-      });
-      this.canvas.dispatchEvent(mouseEvent);
-    }, { passive: false });
+      this.start({ clientX: touch.clientX, clientY: touch.clientY });
+    };
 
-    this.canvas.addEventListener('touchmove', (e) => {
+    this.canvas.ontouchmove = (e) => {
       e.preventDefault();
       const touch = e.touches[0];
-      const mouseEvent = new MouseEvent('mousemove', {
-        clientX: touch.clientX,
-        clientY: touch.clientY
-      });
-      this.canvas.dispatchEvent(mouseEvent);
-    }, { passive: false });
+      this.draw({ clientX: touch.clientX, clientY: touch.clientY });
+    };
 
-    this.canvas.addEventListener('touchend', (e) => {
+    this.canvas.ontouchend = (e) => {
       e.preventDefault();
-      const mouseEvent = new MouseEvent('mouseup', {});
-      this.canvas.dispatchEvent(mouseEvent);
-    }, { passive: false });
+      this.stop();
+    };
   }
 
   getPos(e) {
+    if (!this.canvas) return { x: 0, y: 0 };
     const rect = this.canvas.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
@@ -147,12 +149,14 @@ class SignaturePad {
   start(e) {
     this.isDrawing = true;
     const pos = this.getPos(e);
-    this.ctx.beginPath();
-    this.ctx.moveTo(pos.x, pos.y);
+    if (this.ctx) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos.x, pos.y);
+    }
   }
 
   draw(e) {
-    if (!this.isDrawing) return;
+    if (!this.isDrawing || !this.ctx) return;
     const pos = this.getPos(e);
     this.ctx.lineTo(pos.x, pos.y);
     this.ctx.stroke();
@@ -164,33 +168,30 @@ class SignaturePad {
   }
 
   clear() {
-    if (!this.ctx) return;
-    const rect = this.canvas.getBoundingClientRect();
-    this.ctx.clearRect(0, 0, rect.width * 2, rect.height * 2);
+    if (!this.ctx || !this.canvas) return;
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.hasSignature = false;
   }
 
   getDataURL() {
-    if (!this.hasSignature) return null;
+    if (!this.hasSignature || !this.canvas) return null;
     return this.canvas.toDataURL('image/png');
   }
 }
 
-let signPad = null;
+let signPad = new SignaturePad('signatureCanvas');
 
 // --- 3. UI RENDERING & EVENT CONTROLLERS ---
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inisialisasi Signature Pad saat modal dibuka
-  signPad = new SignaturePad('signatureCanvas');
-
-  // Inisialisasi Tampilan Awal
   initApp();
 
   // Sinkronisasi Perubahan Data
-  window.tracesStore.subscribe((packages, activeRole, activeCitizenId) => {
-    renderApp();
-  });
+  if (window.tracesStore) {
+    window.tracesStore.subscribe(() => {
+      renderApp();
+    });
+  }
 });
 
 function initApp() {
@@ -203,7 +204,9 @@ function setupEventListeners() {
   document.querySelectorAll('[data-role-btn]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const role = e.currentTarget.getAttribute('data-role-btn');
-      window.tracesStore.setRole(role);
+      if (window.tracesStore) {
+        window.tracesStore.setRole(role);
+      }
       sfx.playBeep();
     });
   });
@@ -212,7 +215,9 @@ function setupEventListeners() {
   const citizenSelect = document.getElementById('citizenSelect');
   if (citizenSelect) {
     citizenSelect.addEventListener('change', (e) => {
-      window.tracesStore.setActiveCitizen(e.target.value);
+      if (window.tracesStore) {
+        window.tracesStore.setActiveCitizen(e.target.value);
+      }
       sfx.playBeep();
     });
   }
@@ -222,8 +227,10 @@ function setupEventListeners() {
   if (toggleMobileFrameBtn) {
     toggleMobileFrameBtn.addEventListener('click', () => {
       const wrapper = document.getElementById('mobileAppContainer');
-      const isMockup = wrapper.classList.toggle('smartphone-wrapper');
-      toggleMobileFrameBtn.innerText = isMockup ? "🖥️ Tampilan Lebar" : "📱 Tampilan HP Mockup";
+      if (wrapper) {
+        const isMockup = wrapper.classList.toggle('smartphone-wrapper');
+        toggleMobileFrameBtn.innerText = isMockup ? "🖥️ Tampilan Lebar" : "📱 Tampilan HP Mockup";
+      }
     });
   }
 
@@ -241,9 +248,10 @@ function setupEventListeners() {
   if (resetDemoBtn) {
     resetDemoBtn.addEventListener('click', () => {
       if (confirm("Reset seluruh data ke demo awal (5 paket bantuan sosial)?")) {
-        window.tracesStore.resetToDefault();
+        if (window.tracesStore) {
+          window.tracesStore.resetToDefault();
+        }
         sfx.playAlert();
-        alert("Data simulasi TRACES-CO berhasil di-reset ke kondisi awal!");
       }
     });
   }
@@ -258,8 +266,10 @@ function setupEventListeners() {
   const kelurahanPkgSelect = document.getElementById('kelurahanPkgSelect');
   if (kelurahanPkgSelect) {
     kelurahanPkgSelect.addEventListener('change', (e) => {
-      const pkg = window.tracesStore.getPackageById(e.target.value);
-      window.gpsTracker.init(pkg);
+      if (window.tracesStore && window.gpsTracker) {
+        const pkg = window.tracesStore.getPackageById(e.target.value);
+        window.gpsTracker.init(pkg);
+      }
     });
   }
 
@@ -267,7 +277,7 @@ function setupEventListeners() {
   const btnGpsStep = document.getElementById('btnGpsStep');
   if (btnGpsStep) {
     btnGpsStep.addEventListener('click', () => {
-      window.gpsTracker.stepForward(0.25);
+      if (window.gpsTracker) window.gpsTracker.stepForward(0.25);
       sfx.playBeep();
     });
   }
@@ -275,7 +285,7 @@ function setupEventListeners() {
   const btnGpsArrive = document.getElementById('btnGpsArrive');
   if (btnGpsArrive) {
     btnGpsArrive.addEventListener('click', () => {
-      window.gpsTracker.arriveAtDestination();
+      if (window.gpsTracker) window.gpsTracker.arriveAtDestination();
       sfx.playSuccess();
     });
   }
@@ -283,7 +293,7 @@ function setupEventListeners() {
   const btnGpsReset = document.getElementById('btnGpsReset');
   if (btnGpsReset) {
     btnGpsReset.addEventListener('click', () => {
-      window.gpsTracker.resetPosition();
+      if (window.gpsTracker) window.gpsTracker.resetPosition();
       sfx.playBeep();
     });
   }
@@ -320,31 +330,41 @@ function setupEventListeners() {
 
 // --- RENDER APP ---
 function renderApp() {
-  const role = window.tracesStore.activeRole;
-  const packages = window.tracesStore.getPackages();
+  if (!window.tracesStore) return;
 
-  // 1. Update Role Buttons UI
+  const role = window.tracesStore.activeRole || "PEMERINTAH";
+  const packages = window.tracesStore.getPackages() || [];
+
+  // 1. Update Role Buttons UI dengan kontras warna yang jelas
   document.querySelectorAll('[data-role-btn]').forEach(btn => {
     const btnRole = btn.getAttribute('data-role-btn');
     if (btnRole === role) {
-      btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white shadow-md transition-all";
+      btn.className = "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white shadow-md transition-all whitespace-nowrap";
     } else {
-      btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all";
+      btn.className = "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-gov-800 transition-all whitespace-nowrap";
     }
   });
 
   // 2. Tampilkan Role Container yang Aktif
-  document.getElementById('viewPemerintah').classList.toggle('hidden', role !== 'PEMERINTAH');
-  document.getElementById('viewKelurahan').classList.toggle('hidden', role !== 'KELURAHAN');
-  document.getElementById('viewPenerima').classList.toggle('hidden', role !== 'PENERIMA');
+  const elPem = document.getElementById('viewPemerintah');
+  const elKel = document.getElementById('viewKelurahan');
+  const elPen = document.getElementById('viewPenerima');
 
-  // 3. Render Spesifik View
-  if (role === 'PEMERINTAH') {
-    renderPemerintahView(packages);
-  } else if (role === 'KELURAHAN') {
-    renderKelurahanView(packages);
-  } else if (role === 'PENERIMA') {
-    renderPenerimaView(packages);
+  if (elPem) elPem.classList.toggle('hidden', role !== 'PEMERINTAH');
+  if (elKel) elKel.classList.toggle('hidden', role !== 'KELURAHAN');
+  if (elPen) elPen.classList.toggle('hidden', role !== 'PENERIMA');
+
+  // 3. Render Spesifik View dengan perlindungan try-catch
+  try {
+    if (role === 'PEMERINTAH') {
+      renderPemerintahView(packages);
+    } else if (role === 'KELURAHAN') {
+      renderKelurahanView(packages);
+    } else if (role === 'PENERIMA') {
+      renderPenerimaView(packages);
+    }
+  } catch (err) {
+    console.error("Error rendering view for role:", role, err);
   }
 }
 
@@ -352,7 +372,6 @@ function renderApp() {
 // 🏛️ ROLE 1: PEMERINTAH (DASHBOARD PUSAT)
 // ==========================================
 function renderPemerintahView(packages) {
-  // Summary Metrics
   const total = packages.length;
   const dibuat = packages.filter(p => p.status === 'DIBUAT').length;
   const kelurahan = packages.filter(p => p.status === 'DITERIMA_KELURAHAN').length;
@@ -360,19 +379,25 @@ function renderPemerintahView(packages) {
   const selesai = packages.filter(p => p.status === 'SELESAI').length;
   const masalah = packages.filter(p => p.status === 'BERMASALAH').length;
 
-  document.getElementById('statTotal').innerText = total;
-  document.getElementById('statDibuat').innerText = dibuat;
-  document.getElementById('statKelurahan').innerText = kelurahan;
-  document.getElementById('statPengiriman').innerText = kirim;
-  document.getElementById('statSelesai').innerText = selesai;
-  document.getElementById('statMasalah').innerText = masalah;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('statTotal', total);
+  setTxt('statDibuat', dibuat);
+  setTxt('statKelurahan', kelurahan);
+  setTxt('statPengiriman', kirim);
+  setTxt('statSelesai', selesai);
+  setTxt('statMasalah', masalah);
 
   renderPemerintahTable();
 }
 
 function renderPemerintahTable() {
+  if (!window.tracesStore) return;
   const packages = window.tracesStore.getPackages();
-  const search = (document.getElementById('tableSearchInput')?.value || '').toLowerCase();
+  const search = (document.getElementById('tableSearchInput')?.value || '').toLowerCase().trim();
   const statusFilter = document.getElementById('tableStatusFilter')?.value || 'ALL';
   const kelurahanFilter = document.getElementById('tableKelurahanFilter')?.value || 'ALL';
 
@@ -380,11 +405,12 @@ function renderPemerintahTable() {
   if (!tbody) return;
 
   const filtered = packages.filter(pkg => {
-    const matchSearch = pkg.id.toLowerCase().includes(search) ||
-      pkg.penerima.nama.toLowerCase().includes(search) ||
-      pkg.penerima.nik.includes(search);
+    const matchSearch = !search ||
+      pkg.id.toLowerCase().includes(search) ||
+      pkg.penerima?.nama?.toLowerCase().includes(search) ||
+      pkg.penerima?.nik?.includes(search);
     const matchStatus = statusFilter === 'ALL' || pkg.status === statusFilter;
-    const matchKelurahan = kelurahanFilter === 'ALL' || pkg.penerima.kelurahan === kelurahanFilter;
+    const matchKelurahan = kelurahanFilter === 'ALL' || pkg.penerima?.kelurahan === kelurahanFilter;
     return matchSearch && matchStatus && matchKelurahan;
   });
 
@@ -401,22 +427,24 @@ function renderPemerintahTable() {
 
   tbody.innerHTML = filtered.map(pkg => {
     const statusBadge = getStatusBadgeHTML(pkg.status);
-    const itemsPreview = pkg.items.map(it => `${it.nama} (${it.jumlah})`).join(', ');
+    const itemsPreview = pkg.items ? pkg.items.map(it => `${it.nama} (${it.jumlah})`).join(', ') : '-';
+    const lastBlock = pkg.auditTrail && pkg.auditTrail.length > 0 ? pkg.auditTrail[pkg.auditTrail.length - 1] : null;
+    const hashPreview = lastBlock?.hash ? lastBlock.hash.substring(0, 10) + '...' : '-';
 
     return `
       <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
         <td class="py-3 px-4 font-mono-code font-bold text-blue-900 text-xs">
           ${pkg.id}
-          <div class="text-[10px] text-slate-400 font-normal">${pkg.createdAt}</div>
+          <div class="text-[10px] text-slate-400 font-normal">${pkg.createdAt || ''}</div>
         </td>
         <td class="py-3 px-4">
-          <div class="font-bold text-slate-800 text-sm">${pkg.penerima.nama}</div>
-          <div class="text-xs text-slate-500 font-mono-code">NIK: ${formatMaskedNIK(pkg.penerima.nik)}</div>
-          <div class="text-[11px] text-slate-400 truncate max-w-xs">${pkg.penerima.alamat}</div>
+          <div class="font-bold text-slate-800 text-sm">${pkg.penerima?.nama || '-'}</div>
+          <div class="text-xs text-slate-500 font-mono-code">NIK: ${formatMaskedNIK(pkg.penerima?.nik)}</div>
+          <div class="text-[11px] text-slate-400 truncate max-w-xs">${pkg.penerima?.alamat || ''}</div>
         </td>
         <td class="py-3 px-4">
           <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
-            ${pkg.penerima.kelurahan}
+            ${pkg.penerima?.kelurahan || '-'}
           </span>
         </td>
         <td class="py-3 px-4 text-xs text-slate-600 max-w-xs truncate" title="${itemsPreview}">
@@ -426,8 +454,8 @@ function renderPemerintahTable() {
           ${statusBadge}
         </td>
         <td class="py-3 px-4 font-mono-code text-[11px] text-slate-500">
-          <span title="${pkg.auditTrail[pkg.auditTrail.length - 1]?.hash}">
-            ${pkg.auditTrail[pkg.auditTrail.length - 1]?.hash.substring(0, 10)}...
+          <span title="${lastBlock?.hash || ''}">
+            ${hashPreview}
           </span>
         </td>
         <td class="py-3 px-4 text-right">
@@ -448,24 +476,29 @@ function renderPemerintahTable() {
 function handleNewPackageSubmit(e) {
   e.preventDefault();
   const form = e.target;
-  const namaPenerima = form.namaPenerima.value.trim();
-  const nik = form.nik.value.trim();
-  const kelurahan = form.kelurahan.value;
-  const noHp = form.noHp.value.trim();
-  const alamat = form.alamat.value.trim();
-  const operator = form.operator.value.trim() || "Admin Kemensos";
+  const namaPenerima = form.namaPenerima?.value?.trim() || "";
+  let nik = form.nik?.value?.trim() || "";
+  const kelurahan = form.kelurahan?.value || "Menteng";
+  const noHp = form.noHp?.value?.trim() || "0812-0000-0000";
+  const alamat = form.alamat?.value?.trim() || "";
+  const operator = form.operator?.value?.trim() || "Admin Kemensos RI";
 
-  if (!namaPenerima || !nik || !kelurahan || !alamat) {
-    alert("Harap lengkapi semua kolom wajib!");
+  if (!namaPenerima || !nik || !alamat) {
+    alert("Harap lengkapi semua kolom wajib (Nama Penerima, NIK, dan Alamat)!");
     return;
   }
 
-  if (nik.length !== 16 || isNaN(nik)) {
-    alert("NIK harus terdiri dari 16 digit angka!");
+  // Bersihkan NIK: ambil angka saja
+  nik = nik.replace(/\D/g, '');
+  if (!nik) {
+    alert("NIK harus berupa angka!");
     return;
   }
+  // Auto-pad jika kurang dari 16 digit untuk mempermudah testing
+  if (nik.length < 16) {
+    nik = nik.padEnd(16, '0');
+  }
 
-  // Ambil daftar items
   const items = [
     { nama: "Beras Premium", jumlah: "5 kg", checked: true },
     { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: true },
@@ -479,6 +512,14 @@ function handleNewPackageSubmit(e) {
     items.push({ nama: "Mie Instan", jumlah: "10 Bungkus", checked: true });
   }
 
+  // Reset filter tabel agar paket baru langsung tampil di urutan teratas
+  const searchInp = document.getElementById('tableSearchInput');
+  const statFilt = document.getElementById('tableStatusFilter');
+  const kelFilt = document.getElementById('tableKelurahanFilter');
+  if (searchInp) searchInp.value = '';
+  if (statFilt) statFilt.value = 'ALL';
+  if (kelFilt) kelFilt.value = 'ALL';
+
   const newPkg = window.tracesStore.addPackage({
     namaPenerima,
     nik,
@@ -491,8 +532,11 @@ function handleNewPackageSubmit(e) {
 
   form.reset();
   sfx.playSuccess();
-  alert(`Paket Bansos Berhasil Dibuat!\nID Unik: ${newPkg.id}\nKode QR dan Hash Audit telah di-generate secara otomatis.`);
-  openStickerModal(newPkg.id);
+
+  // Buka modal stiker label untuk paket yang baru dibuat
+  setTimeout(() => {
+    openStickerModal(newPkg.id);
+  }, 100);
 }
 
 // ==========================================
@@ -502,28 +546,34 @@ function renderKelurahanView(packages) {
   // Dropdown list paket untuk GPS Map
   const kelurahanPkgSelect = document.getElementById('kelurahanPkgSelect');
   if (kelurahanPkgSelect) {
+    const activePackages = packages.filter(p => p.status === 'DALAM_PENGIRIMAN' || p.status === 'DITERIMA_KELURAHAN');
     const curVal = kelurahanPkgSelect.value;
-    kelurahanPkgSelect.innerHTML = packages
-      .filter(p => p.status === 'DALAM_PENGIRIMAN' || p.status === 'DITERIMA_KELURAHAN')
-      .map(p => `
+
+    if (activePackages.length > 0) {
+      kelurahanPkgSelect.innerHTML = activePackages.map(p => `
         <option value="${p.id}" ${p.id === curVal ? 'selected' : ''}>
-          ${p.id} - ${p.penerima.nama} (${p.penerima.kelurahan}) [${p.status}]
+          ${p.id} - ${p.penerima?.nama || ''} (${p.penerima?.kelurahan || ''}) [${p.status}]
         </option>
       `).join('');
+    } else {
+      kelurahanPkgSelect.innerHTML = packages.map(p => `
+        <option value="${p.id}" ${p.id === curVal ? 'selected' : ''}>
+          ${p.id} - ${p.penerima?.nama || ''} [${p.status}]
+        </option>
+      `).join('');
+    }
 
-    // Update GPS map jika ada paket terpilih
     const selectedPkg = window.tracesStore.getPackageById(kelurahanPkgSelect.value) ||
-      packages.find(p => p.status === 'DALAM_PENGIRIMAN');
-    window.gpsTracker.init(selectedPkg);
+      packages.find(p => p.status === 'DALAM_PENGIRIMAN') ||
+      packages[0];
+
+    if (window.gpsTracker) {
+      window.gpsTracker.init(selectedPkg);
+    }
   }
 
-  // Render Paket Siap Scan Masuk (Status: DIBUAT)
   renderKelurahanPendingScan(packages);
-
-  // Render Paket Siap Dispatch Pengiriman (Status: DITERIMA_KELURAHAN)
   renderKelurahanReadyDispatch(packages);
-
-  // Render Kotak Masuk Laporan Masalah dari Warga
   renderKelurahanIncidentInbox(packages);
 }
 
@@ -546,8 +596,8 @@ function renderKelurahanPendingScan(packages) {
     <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
       <div>
         <div class="text-xs font-mono-code font-bold text-blue-900">${pkg.id}</div>
-        <div class="text-sm font-semibold text-slate-800">${pkg.penerima.nama}</div>
-        <div class="text-xs text-slate-500">Kelurahan: ${pkg.penerima.kelurahan}</div>
+        <div class="text-sm font-semibold text-slate-800">${pkg.penerima?.nama || '-'}</div>
+        <div class="text-xs text-slate-500">Kelurahan: ${pkg.penerima?.kelurahan || '-'}</div>
       </div>
       <button onclick="executeScanKelurahan('${pkg.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
         <span>📷</span> Scan Terima
@@ -558,6 +608,7 @@ function renderKelurahanPendingScan(packages) {
 
 function executeScanKelurahan(pkgId) {
   sfx.playBeep();
+  if (!window.tracesStore) return;
   const res = window.tracesStore.scanKelurahanMasuk(pkgId, "Admin Posko Kelurahan");
   if (res.success) {
     sfx.playSuccess();
@@ -586,8 +637,8 @@ function renderKelurahanReadyDispatch(packages) {
     <div class="flex items-center justify-between p-3 bg-emerald-50/50 rounded-xl border border-emerald-200">
       <div>
         <div class="text-xs font-mono-code font-bold text-emerald-900">${pkg.id}</div>
-        <div class="text-sm font-semibold text-slate-800">${pkg.penerima.nama}</div>
-        <div class="text-xs text-slate-500">${pkg.penerima.alamat}</div>
+        <div class="text-sm font-semibold text-slate-800">${pkg.penerima?.nama || '-'}</div>
+        <div class="text-xs text-slate-500">${pkg.penerima?.alamat || ''}</div>
       </div>
       <button onclick="executeDispatchKurir('${pkg.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
         <span>🚚</span> Kirim ke Alamat
@@ -601,6 +652,7 @@ function executeDispatchKurir(pkgId) {
   if (!kurirNama) return;
 
   sfx.playBeep();
+  if (!window.tracesStore) return;
   const res = window.tracesStore.dispatchKurir(pkgId, {
     nama: kurirNama,
     kendaraan: "Motor Logistik Bansos (B 3341 PKM)",
@@ -627,7 +679,7 @@ function renderKelurahanIncidentInbox(packages) {
 
   if (reported.length === 0) {
     container.innerHTML = `
-      <div class="text-xs text-slate-400 italic p-4 text-center bg-slate-50 rounded-xl">
+      <div class="text-xs text-slate-400 italic p-4 text-center bg-slate-50 rounded-xl col-span-2">
         🎉 Tidak ada laporan ketidaksesuaian aktif. Semua distribusi berjalan lancar.
       </div>
     `;
@@ -644,7 +696,7 @@ function renderKelurahanIncidentInbox(packages) {
       </div>
 
       <div class="font-bold text-slate-800 text-sm">
-        ${pkg.penerima.nama} (NIK: ${formatMaskedNIK(pkg.penerima.nik)})
+        ${pkg.penerima?.nama || '-'} (NIK: ${formatMaskedNIK(pkg.penerima?.nik)})
       </div>
       <div class="text-xs text-red-700 font-semibold">
         Kendala: ${pkg.laporan.kategoriTeks}
@@ -676,31 +728,32 @@ function renderKelurahanIncidentInbox(packages) {
 // 📱 ROLE 3: PENERIMA BANTUAN (MOBILE APP)
 // ==========================================
 function renderPenerimaView(packages) {
+  if (!window.tracesStore) return;
   const activeCitizenId = window.tracesStore.activeCitizenId;
   const pkg = window.tracesStore.getPackageById(activeCitizenId) || packages[0];
+  if (!pkg) return;
 
-  // Update citizen selector dropdown
   const select = document.getElementById('citizenSelect');
   if (select) {
     select.innerHTML = packages.map(p => `
       <option value="${p.id}" ${p.id === pkg.id ? 'selected' : ''}>
-        ${p.penerima.nama} (${p.id} - ${p.status})
+        ${p.penerima?.nama || ''} (${p.id} - ${p.status})
       </option>
     `).join('');
   }
 
-  // Render Header Warga
-  document.getElementById('mobileCitizenName').innerText = pkg.penerima.nama;
-  document.getElementById('mobileCitizenNik').innerText = `NIK: ${formatMaskedNIK(pkg.penerima.nik)}`;
-  document.getElementById('mobilePackageId').innerText = pkg.id;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
 
-  // Render Tracking Timeline & Status Card
+  setTxt('mobileCitizenName', pkg.penerima?.nama || '-');
+  setTxt('mobileCitizenNik', `NIK: ${formatMaskedNIK(pkg.penerima?.nik)}`);
+  setTxt('mobilePackageId', pkg.id);
+
   renderMobileTrackingCard(pkg);
-
-  // Render Checklist Verifikasi Isi Paket
   renderMobileItemsChecklist(pkg);
 
-  // Update Tombol Aksi Verifikasi
   const actionContainer = document.getElementById('mobileActionButtonsContainer');
   if (actionContainer) {
     if (pkg.status === 'SELESAI') {
@@ -721,7 +774,7 @@ function renderPenerimaView(packages) {
             <span>⚠️</span> Laporan Ketidaksesuaian Sedang Diproses
           </div>
           <div class="text-xs text-slate-600">
-            Nomor Tiket: <b>${pkg.laporan?.idTiket}</b>. Tim posko Kelurahan akan segera menghubungi Anda.
+            Nomor Tiket: <b>${pkg.laporan?.idTiket || '-'}</b>. Tim posko Kelurahan akan segera menghubungi Anda.
           </div>
         </div>
       `;
@@ -742,11 +795,14 @@ function renderPenerimaView(packages) {
   }
 
   // Update Mobile GPS Tracker
+  const mapWrap = document.getElementById('mobileMapWrapper');
   if (pkg.status === 'DALAM_PENGIRIMAN') {
-    document.getElementById('mobileMapWrapper')?.classList.remove('hidden');
-    window.mobileGPSTracker.init(pkg);
+    if (mapWrap) mapWrap.classList.remove('hidden');
+    if (window.mobileGPSTracker) {
+      window.mobileGPSTracker.init(pkg);
+    }
   } else {
-    document.getElementById('mobileMapWrapper')?.classList.add('hidden');
+    if (mapWrap) mapWrap.classList.add('hidden');
   }
 }
 
@@ -755,7 +811,7 @@ function renderMobileTrackingCard(pkg) {
   if (!container) return;
 
   const steps = [
-    { key: "DIBUAT", label: "Didaftarkan di Dinsos", desc: pkg.createdAt },
+    { key: "DIBUAT", label: "Didaftarkan di Dinsos", desc: pkg.createdAt || '' },
     { key: "DITERIMA_KELURAHAN", label: "Tiba di Posko Kelurahan", desc: pkg.status === 'DIBUAT' ? 'Menunggu kiriman' : 'Terkonfirmasi scan' },
     { key: "DALAM_PENGIRIMAN", label: "Kurir Menuju Alamat", desc: pkg.kurir ? `${pkg.kurir.nama} (ETA: ${pkg.kurir.eta})` : 'Menunggu jadwal armada' },
     { key: "SELESAI", label: "Paket Diterima Warga", desc: pkg.status === 'SELESAI' ? 'Terverifikasi Berita Acara Digital' : (pkg.status === 'BERMASALAH' ? 'Ada Kendala Dilaporkan' : 'Verifikasi saat kurir tiba') }
@@ -763,7 +819,7 @@ function renderMobileTrackingCard(pkg) {
 
   const statusOrder = ["DIBUAT", "DITERIMA_KELURAHAN", "DALAM_PENGIRIMAN", "SELESAI"];
   let activeIdx = statusOrder.indexOf(pkg.status);
-  if (pkg.status === 'BERMASALAH') activeIdx = 2; // berhenti di pengiriman dengan kendala
+  if (pkg.status === 'BERMASALAH') activeIdx = 2;
 
   container.innerHTML = steps.map((step, idx) => {
     const isCompleted = idx < activeIdx || (pkg.status === 'SELESAI' && idx === 3);
@@ -801,9 +857,9 @@ function renderMobileTrackingCard(pkg) {
 
 function renderMobileItemsChecklist(pkg) {
   const container = document.getElementById('mobileItemsChecklist');
-  if (!container) return;
+  if (!container || !pkg.items) return;
 
-  container.innerHTML = pkg.items.map((item, idx) => `
+  container.innerHTML = pkg.items.map(item => `
     <div class="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors">
       <div class="flex items-center gap-2.5">
         <div class="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-100 text-emerald-700 text-xs font-bold">
@@ -825,22 +881,21 @@ function renderMobileItemsChecklist(pkg) {
 // 🔍 SCAN QR SIMULATOR FOR PENERIMA
 // ==========================================
 function triggerMobileScan() {
+  if (!window.tracesStore) return;
   const activeCitizenId = window.tracesStore.activeCitizenId;
   const pkg = window.tracesStore.getPackageById(activeCitizenId);
   sfx.playBeep();
 
-  // Buka dialog konfirmasi scan paket tiba
   const confirmed = confirm(
     `[SIMULASI SCAN KAMERA QR PENERIMA]\n\n` +
     `Mendeteksi QR Code pada Kardus Bansos:\n` +
-    `ID Paket: ${pkg.id}\n` +
-    `Penerima: ${pkg.penerima.nama}\n\n` +
+    `ID Paket: ${pkg ? pkg.id : '-'}\n` +
+    `Penerima: ${pkg?.penerima?.nama || '-'}\n\n` +
     `Lanjutkan ke Pemeriksaan & Verifikasi Fisik Isi Paket?`
   );
 
   if (confirmed) {
     sfx.playSuccess();
-    // Scroll ke checklist verifikasi
     document.getElementById('mobileVerificationSection')?.scrollIntoView({ behavior: 'smooth' });
   }
 }
@@ -852,33 +907,42 @@ let currentSignPkgId = null;
 
 function openSignatureModal(pkgId) {
   currentSignPkgId = pkgId;
+  if (!window.tracesStore) return;
   const pkg = window.tracesStore.getPackageById(pkgId);
   if (!pkg) return;
 
-  document.getElementById('signModalPenerimaNama').innerText = pkg.penerima.nama;
-  document.getElementById('signModalPackageId').innerText = pkg.id;
+  const nameEl = document.getElementById('signModalPenerimaNama');
+  const pkgEl = document.getElementById('signModalPackageId');
+  if (nameEl) nameEl.innerText = pkg.penerima?.nama || '-';
+  if (pkgEl) pkgEl.innerText = pkg.id;
 
-  if (signPad) signPad.clear();
+  const modal = document.getElementById('signatureModal');
+  if (modal) modal.classList.remove('hidden');
 
-  document.getElementById('signatureModal').classList.remove('hidden');
+  // Inisialisasi kanvas setelah modal terbuka
+  setTimeout(() => {
+    if (signPad) {
+      signPad.init();
+      signPad.clear();
+    }
+  }, 50);
 }
 
 function closeSignatureModal() {
-  document.getElementById('signatureModal').classList.add('hidden');
+  const modal = document.getElementById('signatureModal');
+  if (modal) modal.classList.add('hidden');
   currentSignPkgId = null;
 }
 
 function handleVerifySuccessSubmit() {
-  if (!currentSignPkgId) return;
+  if (!currentSignPkgId || !window.tracesStore) return;
 
-  // Jika tidak digambar, buat tanda tangan otomatis digital
   let signData = signPad ? signPad.getDataURL() : null;
   if (!signData) {
     signData = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='70'><path d='M20 40 Q 50 15 80 40 T 150 35' stroke='%23059669' stroke-width='3' fill='none'/></svg>";
   }
 
   const catatan = document.getElementById('signCatatan')?.value || "Bantuan telah diterima utuh dan sesuai rincian.";
-
   const res = window.tracesStore.verifySuccess(currentSignPkgId, signData, catatan);
 
   closeSignatureModal();
@@ -891,12 +955,14 @@ function handleVerifySuccessSubmit() {
 }
 
 function triggerConfetti() {
-  if (window.confetti) {
-    window.confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+  if (typeof window.confetti === 'function') {
+    try {
+      window.confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    } catch (e) {}
   }
 }
 
@@ -904,19 +970,24 @@ function triggerConfetti() {
 // 📄 BAST DIGITAL MODAL (BERITA ACARA)
 // ==========================================
 function openBastModal(pkgId) {
+  if (!window.tracesStore) return;
   const pkg = window.tracesStore.getPackageById(pkgId);
   if (!pkg || !pkg.tandaTerima) return;
 
-  document.getElementById('bastNomor').innerText = pkg.tandaTerima.nomorBAST;
-  document.getElementById('bastWaktu').innerText = pkg.tandaTerima.waktuPenerimaan;
-  document.getElementById('bastNama').innerText = pkg.penerima.nama;
-  document.getElementById('bastNik').innerText = pkg.penerima.nik;
-  document.getElementById('bastAlamat').innerText = pkg.penerima.alamat;
-  document.getElementById('bastKelurahan').innerText = pkg.penerima.kelurahan;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
 
-  // Items
+  setTxt('bastNomor', pkg.tandaTerima.nomorBAST);
+  setTxt('bastWaktu', pkg.tandaTerima.waktuPenerimaan);
+  setTxt('bastNama', pkg.penerima?.nama || '-');
+  setTxt('bastNik', pkg.penerima?.nik || '-');
+  setTxt('bastAlamat', pkg.penerima?.alamat || '-');
+  setTxt('bastKelurahan', pkg.penerima?.kelurahan || '-');
+
   const itemsList = document.getElementById('bastItemsList');
-  if (itemsList) {
+  if (itemsList && pkg.items) {
     itemsList.innerHTML = pkg.items.map(it => `
       <li class="flex justify-between border-b border-slate-100 py-1 text-xs">
         <span>${it.nama}</span>
@@ -925,23 +996,21 @@ function openBastModal(pkgId) {
     `).join('');
   }
 
-  // Tanda Tangan
   const signImg = document.getElementById('bastSignImage');
   if (signImg && pkg.tandaTerima.signatureData) {
     signImg.src = pkg.tandaTerima.signatureData;
   }
 
-  // QR Code Tanda Terima Digital
   const qrContainer = document.getElementById('bastQRContainer');
   if (qrContainer && window.QRHelper) {
-    window.QRHelper.renderQR(qrContainer, `TRACES-BAST|${pkg.tandaTerima.nomorBAST}|${pkg.penerima.nik}`, 110);
+    window.QRHelper.renderQR(qrContainer, `TRACES-BAST|${pkg.tandaTerima.nomorBAST}|${pkg.penerima?.nik}`, 110);
   }
 
-  document.getElementById('bastModal').classList.remove('hidden');
+  document.getElementById('bastModal')?.classList.remove('hidden');
 }
 
 function closeBastModal() {
-  document.getElementById('bastModal').classList.add('hidden');
+  document.getElementById('bastModal')?.classList.add('hidden');
 }
 
 // ==========================================
@@ -951,16 +1020,18 @@ let currentReportPkgId = null;
 
 function openReportModal(pkgId) {
   currentReportPkgId = pkgId;
+  if (!window.tracesStore) return;
   const pkg = window.tracesStore.getPackageById(pkgId);
   if (!pkg) return;
 
-  document.getElementById('reportPackageId').innerText = pkg.id;
-  document.getElementById('reportPenerimaNama').innerText = pkg.penerima.nama;
+  const idEl = document.getElementById('reportPackageId');
+  const nameEl = document.getElementById('reportPenerimaNama');
+  if (idEl) idEl.innerText = pkg.id;
+  if (nameEl) nameEl.innerText = pkg.penerima?.nama || '-';
 
-  // Render pilihan checklist item yang bermasalah
   const container = document.getElementById('reportItemsCheckboxContainer');
-  if (container) {
-    container.innerHTML = pkg.items.map((it, idx) => `
+  if (container && pkg.items) {
+    container.innerHTML = pkg.items.map(it => `
       <label class="flex items-center gap-2 p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-xs cursor-pointer">
         <input type="checkbox" name="itemReport" value="${it.nama}" class="rounded text-red-600 focus:ring-red-500">
         <span>${it.nama} (${it.jumlah})</span>
@@ -968,29 +1039,27 @@ function openReportModal(pkgId) {
     `).join('');
   }
 
-  document.getElementById('reportModal').classList.remove('hidden');
+  document.getElementById('reportModal')?.classList.remove('hidden');
 }
 
 function closeReportModal() {
-  document.getElementById('reportModal').classList.add('hidden');
+  document.getElementById('reportModal')?.classList.add('hidden');
   currentReportPkgId = null;
 }
 
 function handleReportIssueSubmit(e) {
   e.preventDefault();
-  if (!currentReportPkgId) return;
+  if (!currentReportPkgId || !window.tracesStore) return;
 
   const form = e.target;
-  const kategori = form.kategoriMasalah.value;
+  const kategori = form.kategoriMasalah?.value || "ISI_KURANG";
   const kategoriSelect = form.kategoriMasalah;
-  const kategoriTeks = kategoriSelect.options[kategoriSelect.selectedIndex].text;
-  const keterangan = form.keterangan.value.trim();
+  const kategoriTeks = kategoriSelect?.options[kategoriSelect.selectedIndex]?.text || kategori;
+  const keterangan = form.keterangan?.value?.trim() || "Tidak ada rincian tambahan";
 
-  // Items checked
   const checkedBoxes = form.querySelectorAll('input[name="itemReport"]:checked');
   const itemBermasalah = Array.from(checkedBoxes).map(cb => cb.value);
 
-  // Default dummy photo
   const fotoUrl = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23fee2e2'/><text x='150' y='95' fill='%23dc2626' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>[BUKTI FOTO KENDALA]</text><text x='150' y='125' fill='%23991b1b' font-family='sans-serif' font-size='12' text-anchor='middle'>" + encodeURIComponent(kategoriTeks) + "</text></svg>";
 
   const res = window.tracesStore.reportIssue(currentReportPkgId, {
@@ -1021,27 +1090,33 @@ let currentResolvePkgId = null;
 
 function openResolveModal(pkgId) {
   currentResolvePkgId = pkgId;
+  if (!window.tracesStore) return;
   const pkg = window.tracesStore.getPackageById(pkgId);
   if (!pkg || !pkg.laporan) return;
 
-  document.getElementById('resolveTiketId').innerText = pkg.laporan.idTiket;
-  document.getElementById('resolvePenerimaNama').innerText = pkg.penerima.nama;
-  document.getElementById('resolveKendala').innerText = pkg.laporan.kategoriTeks;
-  document.getElementById('resolveCatatanWarga').innerText = `"${pkg.laporan.keterangan}"`;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
 
-  document.getElementById('resolveModal').classList.remove('hidden');
+  setTxt('resolveTiketId', pkg.laporan.idTiket);
+  setTxt('resolvePenerimaNama', pkg.penerima?.nama || '-');
+  setTxt('resolveKendala', pkg.laporan.kategoriTeks);
+  setTxt('resolveCatatanWarga', `"${pkg.laporan.keterangan}"`);
+
+  document.getElementById('resolveModal')?.classList.remove('hidden');
 }
 
 function closeResolveModal() {
-  document.getElementById('resolveModal').classList.add('hidden');
+  document.getElementById('resolveModal')?.classList.add('hidden');
   currentResolvePkgId = null;
 }
 
 function handleResolveSubmit() {
-  if (!currentResolvePkgId) return;
+  if (!currentResolvePkgId || !window.tracesStore) return;
 
-  const solusi = document.getElementById('resolveSolusiSelect').value;
-  const catatanAdmin = document.getElementById('resolveCatatanAdmin').value.trim() || "Telah dilakukan penanganan oleh posko Kelurahan.";
+  const solusi = document.getElementById('resolveSolusiSelect')?.value || "PAKET_PENGGANTI_DIKIRIM";
+  const catatanAdmin = document.getElementById('resolveCatatanAdmin')?.value?.trim() || "Telah dilakukan penanganan oleh posko Kelurahan.";
 
   const res = window.tracesStore.resolveIssue(currentResolvePkgId, solusi, catatanAdmin);
 
@@ -1057,18 +1132,23 @@ function handleResolveSubmit() {
 // 🏷️ QR CODE & STICKER LABEL MODAL
 // ==========================================
 function openStickerModal(pkgId) {
+  if (!window.tracesStore) return;
   const pkg = window.tracesStore.getPackageById(pkgId);
   if (!pkg) return;
 
-  document.getElementById('stickerId').innerText = pkg.id;
-  document.getElementById('stickerNama').innerText = pkg.penerima.nama;
-  document.getElementById('stickerNik').innerText = formatMaskedNIK(pkg.penerima.nik);
-  document.getElementById('stickerKelurahan').innerText = pkg.penerima.kelurahan;
-  document.getElementById('stickerAlamat').innerText = pkg.penerima.alamat;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
 
-  // Render Items List
+  setTxt('stickerId', pkg.id);
+  setTxt('stickerNama', pkg.penerima?.nama || '-');
+  setTxt('stickerNik', formatMaskedNIK(pkg.penerima?.nik));
+  setTxt('stickerKelurahan', pkg.penerima?.kelurahan || '-');
+  setTxt('stickerAlamat', pkg.penerima?.alamat || '-');
+
   const itemsList = document.getElementById('stickerItemsList');
-  if (itemsList) {
+  if (itemsList && pkg.items) {
     itemsList.innerHTML = pkg.items.map(it => `
       <div class="flex justify-between border-b border-dashed border-slate-200 py-0.5 text-xs">
         <span>• ${it.nama}</span>
@@ -1077,37 +1157,41 @@ function openStickerModal(pkgId) {
     `).join('');
   }
 
-  // Render QR Code
   const qrContainer = document.getElementById('stickerQRContainer');
   if (qrContainer && window.QRHelper) {
-    window.QRHelper.renderQR(qrContainer, `TRACES|${pkg.id}|${pkg.penerima.nik}`, 140);
+    window.QRHelper.renderQR(qrContainer, `TRACES|${pkg.id}|${pkg.penerima?.nik}`, 140);
   }
 
-  // Render Barcode
   const barcodeTarget = document.getElementById('stickerBarcodeTarget');
   if (barcodeTarget && window.QRHelper) {
-    window.QRHelper.renderBarcode(barcodeTarget, pkg.barcode, { width: 2, height: 42 });
+    window.QRHelper.renderBarcode(barcodeTarget, pkg.barcode || pkg.id, { width: 2, height: 42 });
   }
 
-  document.getElementById('stickerModal').classList.remove('hidden');
+  document.getElementById('stickerModal')?.classList.remove('hidden');
 }
 
 function closeStickerModal() {
-  document.getElementById('stickerModal').classList.add('hidden');
+  document.getElementById('stickerModal')?.classList.add('hidden');
 }
 
 // ==========================================
 // 📜 BLOCKCHAIN AUDIT TRAIL MODAL
 // ==========================================
 function openAuditModal(pkgId) {
+  if (!window.tracesStore) return;
   const pkg = window.tracesStore.getPackageById(pkgId);
   if (!pkg) return;
 
-  document.getElementById('auditModalPackageId').innerText = pkg.id;
-  document.getElementById('auditModalPenerima').innerText = `${pkg.penerima.nama} (Kel. ${pkg.penerima.kelurahan})`;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('auditModalPackageId', pkg.id);
+  setTxt('auditModalPenerima', `${pkg.penerima?.nama || '-'} (Kel. ${pkg.penerima?.kelurahan || '-'})`);
 
   const list = document.getElementById('auditTrailList');
-  if (list) {
+  if (list && pkg.auditTrail) {
     list.innerHTML = pkg.auditTrail.map((block, idx) => `
       <div class="relative pl-6 pb-6 border-l-2 ${idx === pkg.auditTrail.length - 1 ? 'border-emerald-500' : 'border-blue-400'} last:pb-0">
         <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full ${idx === pkg.auditTrail.length - 1 ? 'bg-emerald-500 ring-4 ring-emerald-100' : 'bg-blue-600'}"></div>
@@ -1128,11 +1212,11 @@ function openAuditModal(pkgId) {
     `).join('');
   }
 
-  document.getElementById('auditModal').classList.remove('hidden');
+  document.getElementById('auditModal')?.classList.remove('hidden');
 }
 
 function closeAuditModal() {
-  document.getElementById('auditModal').classList.add('hidden');
+  document.getElementById('auditModal')?.classList.add('hidden');
 }
 
 // --- HELPER UTILITIES ---
@@ -1154,6 +1238,6 @@ function getStatusBadgeHTML(status) {
 }
 
 function formatMaskedNIK(nik) {
-  if (!nik || nik.length < 16) return nik;
-  return nik.substring(0, 6) + "******" + nik.substring(12);
+  if (!nik || nik.length < 10) return nik || '-';
+  return nik.substring(0, 6) + "******" + nik.substring(nik.length - 4);
 }

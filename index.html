@@ -52,7 +52,182 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/style.css">
+  <style>
+/* TRACES-CO - Government Blue & Emerald Design System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --gov-navy-950: #07162c;
+  --gov-navy-900: #0b2545;
+  --gov-blue-800: #134074;
+  --gov-blue-600: #1d4ed8;
+  --gov-blue-500: #2563eb;
+  --emerald-600: #059669;
+  --emerald-500: #10b981;
+  --emerald-100: #d1fae5;
+  --emerald-50: #ecfdf5;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.font-mono-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Status Badges */
+.badge-dibuat {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.badge-kelurahan {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.badge-pengiriman {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-selesai {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-bermasalah {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* Smartphone Mockup Frame */
+.smartphone-wrapper {
+  max-width: 412px;
+  margin: 0 auto;
+  border-radius: 44px;
+  background-color: #0f172a;
+  padding: 12px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.smartphone-screen {
+  background-color: #ffffff;
+  border-radius: 34px;
+  overflow: hidden;
+  position: relative;
+  min-height: 720px;
+  display: flex;
+  flex-direction: column;
+}
+
+.smartphone-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 22px;
+  background-color: #0f172a;
+  border-radius: 20px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.smartphone-island .camera {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+}
+
+.smartphone-island .sensor {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #0f172a;
+}
+
+/* Signature Pad Canvas */
+#signatureCanvas {
+  touch-action: none;
+  cursor: crosshair;
+  background-color: #f8fafc;
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+}
+
+/* Scan Viewfinder Radar Animation */
+.viewfinder-laser {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  box-shadow: 0 0 12px #10b981;
+  animation: scanLaser 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes scanLaser {
+  0% { top: 5%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 95%; opacity: 0; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print Stylesheet for Sticker Label & BAST Slip */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printStickerArea, #printStickerArea *,
+  #printBastArea, #printBastArea * {
+    visibility: visible;
+  }
+  #printStickerArea, #printBastArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
 
@@ -667,7 +842,7 @@
         <!-- QR Code & Barcode Display -->
         <div class="flex flex-col items-center justify-center gap-2 pt-2 border-t border-dashed border-slate-300">
           <div id="stickerQRContainer" class="p-1.5 bg-white rounded-xl shadow-sm border border-slate-200"></div>
-          <div id="stickerBarcodeTarget" class="w-full flex justify-center"></div>
+          <div class="w-full flex justify-center"><svg id="stickerBarcodeTarget"></svg></div>
           <div class="text-[9px] text-slate-400 text-center font-mono-code">
             SECURITY HASH: 0x8f2a1b9c7d4e3f20 &bull; DILARANG DIPERJUALBELIKAN
           </div>
@@ -985,11 +1160,2467 @@
     </div>
   </footer>
 
-  <!-- Application Logic Scripts -->
-  <script src="js/data.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/qr-helper.js"></script>
-  <script src="js/map-tracker.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Application Logic Scripts (Inlined for 100% Hosting Reliability) -->
+
+  <script>
+  /* --- 1. DATA INITIALIZATION --- */
+  /**
+ * TRACES-CO - Data Awal Simulasi Distribusi Bansos Sembako
+ * Berisi data dummy penerima bansos dengan variasi status realistis
+ */
+
+const DEFAULT_PACKAGES = [
+  {
+    id: "TRC-2026-JKT-101",
+    barcode: "TRC2026JKT101",
+    penerima: {
+      nama: "Ibu Siti Aminah",
+      nik: "3171015504820002",
+      noHp: "0812-9876-5432",
+      kelurahan: "Menteng",
+      alamat: "Jl. Surabaya No. 14, RT 03 / RW 05",
+      kota: "Jakarta Pusat",
+      lat: -6.1985,
+      lng: 106.8402
+    },
+    items: [
+      { nama: "Beras Premium", jumlah: "5 kg", checked: true },
+      { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: true },
+      { nama: "Gula Pasir Kristal", jumlah: "1 kg", checked: true }
+    ],
+    status: "DALAM_PENGIRIMAN", // DIBUAT | DITERIMA_KELURAHAN | DALAM_PENGIRIMAN | SELESAI | BERMASALAH
+    createdAt: "2026-11-23 08:30 WIB",
+    updatedAt: "2026-11-23 10:45 WIB",
+    kurir: {
+      nama: "Hendra Setiawan",
+      telepon: "0818-4455-6677",
+      kendaraan: "Motor Logistik Bansos (B 4521 PSZ)",
+      eta: "8 Menit",
+      lat: -6.1965,
+      lng: 106.8360
+    },
+    kelurahanAsal: {
+      nama: "Kantor Kelurahan Menteng",
+      alamat: "Jl. Pegangsaan Barat No. 1",
+      lat: -6.1945,
+      lng: 106.8315
+    },
+    laporan: null,
+    tandaTerima: null,
+    auditTrail: [
+      {
+        block: 1,
+        waktu: "2026-11-23 08:30:12 WIB",
+        aksi: "PAKET_DIBUAT",
+        aktor: "Kemensos Pusat (Petugas: Bambang R.)",
+        deskripsi: "Paket bansos berhasil didaftarkan dan ID QR di-generate.",
+        hash: "0x8f2a1b9c7d4e3f20"
+      },
+      {
+        block: 2,
+        waktu: "2026-11-23 09:40:05 WIB",
+        aksi: "SCAN_MASUK_KELURAHAN",
+        aktor: "Kelurahan Menteng (Admin: Dewi L.)",
+        deskripsi: "Paket fisik diterima di kantor kelurahan melalui scan QR.",
+        hash: "0x4e7b9a2c1f8d3e50"
+      },
+      {
+        block: 3,
+        waktu: "2026-11-23 10:30:19 WIB",
+        aksi: "DISPATCH_KURIR",
+        aktor: "Kelurahan Menteng (Koordinator Lapangan)",
+        deskripsi: "Paket dibawa kurir Hendra Setiawan menuju alamat penerima. GPS aktif.",
+        hash: "0x1d5e8f3a9b2c7e40"
+      }
+    ]
+  },
+  {
+    id: "TRC-2026-JKT-102",
+    barcode: "TRC2026JKT102",
+    penerima: {
+      nama: "Bpk. Joko Wahyono",
+      nik: "3171021208750004",
+      noHp: "0856-1122-3344",
+      kelurahan: "Gambir",
+      alamat: "Jl. Veteran I No. 8, RT 01 / RW 02",
+      kota: "Jakarta Pusat",
+      lat: -6.1685,
+      lng: 106.8285
+    },
+    items: [
+      { nama: "Beras Premium", jumlah: "5 kg", checked: true },
+      { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: true },
+      { nama: "Gula Pasir Kristal", jumlah: "1 kg", checked: true },
+      { nama: "Sarden Saus Tomat", jumlah: "2 Kaleng", checked: true }
+    ],
+    status: "DITERIMA_KELURAHAN",
+    createdAt: "2026-11-23 08:45 WIB",
+    updatedAt: "2026-11-23 10:15 WIB",
+    kurir: null,
+    kelurahanAsal: {
+      nama: "Kantor Kelurahan Gambir",
+      alamat: "Jl. Kebon Sirih Timur",
+      lat: -6.1750,
+      lng: 106.8300
+    },
+    laporan: null,
+    tandaTerima: null,
+    auditTrail: [
+      {
+        block: 1,
+        waktu: "2026-11-23 08:45:00 WIB",
+        aksi: "PAKET_DIBUAT",
+        aktor: "Kemensos Pusat (Petugas: Bambang R.)",
+        deskripsi: "Paket terdaftar di sistem pusat.",
+        hash: "0x9a3f2b8c1e7d4a60"
+      },
+      {
+        block: 2,
+        waktu: "2026-11-23 10:15:22 WIB",
+        aksi: "SCAN_MASUK_KELURAHAN",
+        aktor: "Kelurahan Gambir (Admin: Rahmat S.)",
+        deskripsi: "Paket diterima di gudang distribusi kelurahan.",
+        hash: "0x3c7e9a1b5f2d8e40"
+      }
+    ]
+  },
+  {
+    id: "TRC-2026-JKT-103",
+    barcode: "TRC2026JKT103",
+    penerima: {
+      nama: "Ibu Rusmini",
+      nik: "3171034407890001",
+      noHp: "0813-4455-6677",
+      kelurahan: "Senen",
+      alamat: "Jl. Kramat Pulo Gg. VI No. 22, RT 07 / RW 04",
+      kota: "Jakarta Pusat",
+      lat: -6.1895,
+      lng: 106.8450
+    },
+    items: [
+      { nama: "Beras Premium", jumlah: "5 kg", checked: true },
+      { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: true },
+      { nama: "Gula Pasir Kristal", jumlah: "1 kg", checked: true }
+    ],
+    status: "DIBUAT",
+    createdAt: "2026-11-23 09:10 WIB",
+    updatedAt: "2026-11-23 09:10 WIB",
+    kurir: null,
+    kelurahanAsal: {
+      nama: "Kantor Kelurahan Senen",
+      alamat: "Jl. Salemba Tengah",
+      lat: -6.1920,
+      lng: 106.8480
+    },
+    laporan: null,
+    tandaTerima: null,
+    auditTrail: [
+      {
+        block: 1,
+        waktu: "2026-11-23 09:10:04 WIB",
+        aksi: "PAKET_DIBUAT",
+        aktor: "Kemensos Pusat (Petugas: Bambang R.)",
+        deskripsi: "Paket siap dikirim dari gudang logistik pusat ke Kelurahan Senen.",
+        hash: "0x7d2e9b4a1c8f3a50"
+      }
+    ]
+  },
+  {
+    id: "TRC-2026-JKT-104",
+    barcode: "TRC2026JKT104",
+    penerima: {
+      nama: "Bpk. Bambang Pamungkas",
+      nik: "3171041006800007",
+      noHp: "0817-8899-0011",
+      kelurahan: "Cempaka Putih",
+      alamat: "Jl. Cempaka Putih Barat XIX No. 5, RT 04 / RW 08",
+      kota: "Jakarta Pusat",
+      lat: -6.1820,
+      lng: 106.8650
+    },
+    items: [
+      { nama: "Beras Premium", jumlah: "5 kg", checked: true },
+      { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: true },
+      { nama: "Gula Pasir Kristal", jumlah: "1 kg", checked: true }
+    ],
+    status: "SELESAI",
+    createdAt: "2026-11-23 07:00 WIB",
+    updatedAt: "2026-11-23 11:20 WIB",
+    kurir: {
+      nama: "Agus Pratama",
+      telepon: "0819-3322-1100",
+      kendaraan: "Mobil Pickup Bansos (B 9812 PKM)",
+      eta: "Tiba",
+      lat: -6.1820,
+      lng: 106.8650
+    },
+    kelurahanAsal: {
+      nama: "Kantor Kelurahan Cempaka Putih Barat",
+      alamat: "Jl. Percetakan Negara",
+      lat: -6.1860,
+      lng: 106.8600
+    },
+    laporan: null,
+    tandaTerima: {
+      nomorBAST: "BAST-BANSOS/2026/XI/0912",
+      waktuPenerimaan: "2026-11-23 11:20:45 WIB",
+      namaPenerima: "Bpk. Bambang Pamungkas",
+      nikPenerima: "3171041006800007",
+      statusVerifikasi: "SESUAI 100%",
+      catatan: "Bantuan diterima langsung dalam kondisi baik dan lengkap.",
+      signatureData: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='70'><path d='M20 45 Q 60 10 90 40 T 160 30' stroke='%23059669' stroke-width='3' fill='none'/></svg>"
+    },
+    auditTrail: [
+      {
+        block: 1,
+        waktu: "2026-11-23 07:00:15 WIB",
+        aksi: "PAKET_DIBUAT",
+        aktor: "Kemensos Pusat",
+        deskripsi: "Pendaftaran paket bansos.",
+        hash: "0x2e4f6a8c0b1d3e50"
+      },
+      {
+        block: 2,
+        waktu: "2026-11-23 08:15:30 WIB",
+        aksi: "SCAN_MASUK_KELURAHAN",
+        aktor: "Kelurahan Cempaka Putih",
+        deskripsi: "Scan barcode paket tiba di kelurahan.",
+        hash: "0x5a7c9e1b3d5f7a90"
+      },
+      {
+        block: 3,
+        waktu: "2026-11-23 09:30:00 WIB",
+        aksi: "DISPATCH_KURIR",
+        aktor: "Kurir Agus Pratama",
+        deskripsi: "Paket dibawa ke alamat warga.",
+        hash: "0x8b0d2f4a6c8e0b20"
+      },
+      {
+        block: 4,
+        waktu: "2026-11-23 11:20:45 WIB",
+        aksi: "VERIFIKASI_PENERIMA_SESUAI",
+        aktor: "Penerima (Bambang Pamungkas)",
+        deskripsi: "Penerima verifikasi fisik paket 100% sesuai dan menandatangani BAST digital.",
+        hash: "0x1c3e5a7b9d1f3b50"
+      }
+    ]
+  },
+  {
+    id: "TRC-2026-JKT-105",
+    barcode: "TRC2026JKT105",
+    penerima: {
+      nama: "Bpk. Hendra Gunawan",
+      nik: "3171052309830005",
+      noHp: "0821-3344-9988",
+      kelurahan: "Menteng",
+      alamat: "Jl. Pegangsaan Barat No. 3, RT 02 / RW 01",
+      kota: "Jakarta Pusat",
+      lat: -6.1955,
+      lng: 106.8420
+    },
+    items: [
+      { nama: "Beras Premium", jumlah: "5 kg", checked: true },
+      { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: false },
+      { nama: "Gula Pasir Kristal", jumlah: "1 kg", checked: true }
+    ],
+    status: "BERMASALAH",
+    createdAt: "2026-11-23 08:30 WIB",
+    updatedAt: "2026-11-23 11:50 WIB",
+    kurir: {
+      nama: "Hendra Setiawan",
+      telepon: "0818-4455-6677",
+      kendaraan: "Motor Logistik Bansos (B 4521 PSZ)",
+      eta: "Selesai Antar",
+      lat: -6.1955,
+      lng: 106.8420
+    },
+    kelurahanAsal: {
+      nama: "Kantor Kelurahan Menteng",
+      alamat: "Jl. Pegangsaan Barat No. 1",
+      lat: -6.1945,
+      lng: 106.8315
+    },
+    laporan: {
+      idTiket: "LAP-2026-7821",
+      waktuLapor: "2026-11-23 11:50:18 WIB",
+      kategori: "KEMASAN_BOCOR", // ISI_KURANG | BARANG_RUSAK | KEMASAN_BOCOR | KADALUARSA
+      kategoriTeks: "Kemasan Bocor / Terbuka & Isi Kurang",
+      itemBermasalah: ["Minyak Goreng Kemasan 1 Liter"],
+      keterangan: "Pouch minyak goreng robek di bagian sudut dan tumpah membasahi karung beras. Mohon segera diganti minyak kemasan yang baru.",
+      fotoUrl: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23fee2e2'/><text x='150' y='95' fill='%23dc2626' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>[BUKTI FOTO DILAMPIRKAN]</text><text x='150' y='125' fill='%23991b1b' font-family='sans-serif' font-size='12' text-anchor='middle'>Kemasan Minyak Bocor / Rembes</text><circle cx='150' cy='50' r='20' fill='%23fca5a5'/><path d='M140 50 L160 50 M150 40 L150 60' stroke='%23dc2626' stroke-width='3'/></svg>",
+      statusTindakLanjut: "INVESTIGASI_KELURAHAN" // INVESTIGASI_KELURAHAN | PAKET_PENGGANTI_DIKIRIM | SELESAI_DAMAI
+    },
+    tandaTerima: null,
+    auditTrail: [
+      {
+        block: 1,
+        waktu: "2026-11-23 08:30:12 WIB",
+        aksi: "PAKET_DIBUAT",
+        aktor: "Kemensos Pusat",
+        deskripsi: "Paket bansos didaftarkan.",
+        hash: "0x11aa22bb33cc44dd"
+      },
+      {
+        block: 2,
+        waktu: "2026-11-23 09:40:05 WIB",
+        aksi: "SCAN_MASUK_KELURAHAN",
+        aktor: "Kelurahan Menteng",
+        deskripsi: "Scan barang masuk kantor kelurahan.",
+        hash: "0x22bb33cc44dd55ee"
+      },
+      {
+        block: 3,
+        waktu: "2026-11-23 10:30:19 WIB",
+        aksi: "DISPATCH_KURIR",
+        aktor: "Kelurahan Menteng",
+        deskripsi: "Kurir mengantar ke alamat warga.",
+        hash: "0x33cc44dd55ee66ff"
+      },
+      {
+        block: 4,
+        waktu: "2026-11-23 11:50:18 WIB",
+        aksi: "LAPORAN_KETIDAKSESUAIAN",
+        aktor: "Penerima (Bpk. Hendra Gunawan)",
+        deskripsi: "Warga melaporkan ketidaksesuaian: Kemasan Minyak Bocor.",
+        hash: "0x99ff88ee77dd66cc"
+      }
+    ]
+  }
+];
+
+// Helper options
+const KELURAHAN_LIST = [
+  "Menteng",
+  "Gambir",
+  "Senen",
+  "Cempaka Putih",
+  "Tanah Abang",
+  "Johar Baru",
+  "Kebon Sirih"
+];
+
+const DEFAULT_ITEMS = [
+  { nama: "Beras Premium", jumlah: "5 kg" },
+  { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter" },
+  { nama: "Gula Pasir Kristal", jumlah: "1 kg" }
+];
+
+
+  /* --- 2. STORE & STATE MANAGEMENT --- */
+  /**
+ * TRACES-CO - Store & State Management
+ * Sinkronisasi state lokal (localStorage + in-memory fallback)
+ */
+
+const STORAGE_KEY = "TRACES_CO_BANSOS_PACKAGES_V1";
+const ROLE_KEY = "TRACES_CO_ACTIVE_ROLE";
+const ACTIVE_CITIZEN_KEY = "TRACES_CO_ACTIVE_CITIZEN_ID";
+
+// In-Memory Storage Fallback jika localStorage diblokir oleh browser / iframe
+const memoryStore = {};
+
+function safeStorageGet(key) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch (e) {
+    console.warn("Storage restricted, using in-memory store:", e.message);
+  }
+  return memoryStore[key] || null;
+}
+
+function safeStorageSet(key, value) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+      return;
+    }
+  } catch (e) {
+    console.warn("Storage restricted, using in-memory store:", e.message);
+  }
+  memoryStore[key] = value;
+}
+
+// Simulasi Pseudo-Hash SHA-256 untuk Audit Trail Blockchain
+function generateSimulatedHash(seedStr) {
+  let hash = 0x811c9dc5;
+  const str = seedStr + Date.now().toString(36) + Math.random().toString(36);
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  const hexPart1 = (hash >>> 0).toString(16).padStart(8, '0');
+  const hexPart2 = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');
+  const hexPart3 = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');
+  const hexPart4 = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');
+  return "0x" + hexPart1 + hexPart2 + hexPart3 + hexPart4;
+}
+
+function getFormattedTime() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const day = pad(d.getDate());
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear();
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  const seconds = pad(d.getSeconds());
+  return `${day} ${month} ${year} ${hours}:${minutes}:${seconds} WIB`;
+}
+
+class BansosStore {
+  constructor() {
+    this.packages = [];
+    this.activeRole = "PEMERINTAH"; // 'PEMERINTAH' | 'KELURAHAN' | 'PENERIMA'
+    this.activeCitizenId = "TRC-2026-JKT-101"; // Default login citizen
+    this.listeners = [];
+    this.init();
+  }
+
+  init() {
+    const savedData = safeStorageGet(STORAGE_KEY);
+    if (savedData) {
+      try {
+        this.packages = JSON.parse(savedData);
+      } catch (e) {
+        console.error("Gagal parse saved data, memuat data default", e);
+        this.packages = JSON.parse(JSON.stringify(DEFAULT_PACKAGES));
+      }
+    } else {
+      this.packages = JSON.parse(JSON.stringify(DEFAULT_PACKAGES));
+      this.save();
+    }
+
+    const savedRole = safeStorageGet(ROLE_KEY);
+    if (savedRole && ["PEMERINTAH", "KELURAHAN", "PENERIMA"].includes(savedRole)) {
+      this.activeRole = savedRole;
+    }
+
+    const savedCitizen = safeStorageGet(ACTIVE_CITIZEN_KEY);
+    if (savedCitizen && this.getPackageById(savedCitizen)) {
+      this.activeCitizenId = savedCitizen;
+    }
+  }
+
+  save() {
+    safeStorageSet(STORAGE_KEY, JSON.stringify(this.packages));
+    this.notify();
+  }
+
+  notify() {
+    this.listeners.forEach(fn => {
+      try {
+        fn(this.packages, this.activeRole, this.activeCitizenId);
+      } catch (err) {
+        console.error("Error in store listener:", err);
+      }
+    });
+  }
+
+  subscribe(listener) {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter(fn => fn !== listener);
+    };
+  }
+
+  setRole(role) {
+    if (["PEMERINTAH", "KELURAHAN", "PENERIMA"].includes(role)) {
+      this.activeRole = role;
+      safeStorageSet(ROLE_KEY, role);
+      this.notify();
+    }
+  }
+
+  setActiveCitizen(packageId) {
+    const pkg = this.getPackageById(packageId);
+    if (pkg) {
+      this.activeCitizenId = packageId;
+      safeStorageSet(ACTIVE_CITIZEN_KEY, packageId);
+      this.notify();
+    }
+  }
+
+  getPackages() {
+    return this.packages;
+  }
+
+  getPackageById(id) {
+    return this.packages.find(p => p.id === id || p.barcode === id);
+  }
+
+  resetToDefault() {
+    this.packages = JSON.parse(JSON.stringify(DEFAULT_PACKAGES));
+    this.activeCitizenId = "TRC-2026-JKT-101";
+    this.save();
+  }
+
+  // --- ACTIONS ---
+
+  // 1. Tambah Paket Baru (Pemerintah)
+  addPackage(formData) {
+    const seq = 100 + this.packages.length + 1;
+    const newId = `TRC-2026-JKT-${seq}`;
+    const newBarcode = `TRC2026JKT${seq}`;
+    const timestamp = getFormattedTime();
+
+    const initialBlock = {
+      block: 1,
+      waktu: timestamp,
+      aksi: "PAKET_DIBUAT",
+      aktor: `Kemensos Pusat (Petugas: ${formData.operator || 'Admin Pusat'})`,
+      deskripsi: `Paket Bansos dialokasikan untuk ${formData.namaPenerima} di Kelurahan ${formData.kelurahan}.`,
+      hash: generateSimulatedHash(newId + timestamp)
+    };
+
+    const newPkg = {
+      id: newId,
+      barcode: newBarcode,
+      penerima: {
+        nama: formData.namaPenerima,
+        nik: formData.nik,
+        noHp: formData.noHp || "0812-0000-0000",
+        kelurahan: formData.kelurahan,
+        alamat: formData.alamat,
+        kota: "Jakarta Pusat",
+        lat: formData.lat || -6.1950 + (Math.random() - 0.5) * 0.02,
+        lng: formData.lng || 106.8400 + (Math.random() - 0.5) * 0.02
+      },
+      items: formData.items || [
+        { nama: "Beras Premium", jumlah: "5 kg", checked: true },
+        { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: true },
+        { nama: "Gula Pasir Kristal", jumlah: "1 kg", checked: true }
+      ],
+      status: "DIBUAT",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      kurir: null,
+      kelurahanAsal: {
+        nama: `Kantor Kelurahan ${formData.kelurahan}`,
+        alamat: `Jl. Prapatan Utama No. 1, ${formData.kelurahan}`,
+        lat: -6.1930,
+        lng: 106.8320
+      },
+      laporan: null,
+      tandaTerima: null,
+      auditTrail: [initialBlock]
+    };
+
+    this.packages.unshift(newPkg);
+    this.save();
+    return newPkg;
+  }
+
+  // 2. Scan Masuk di Kelurahan
+  scanKelurahanMasuk(packageId, adminName = "Admin Distribusi") {
+    const pkg = this.getPackageById(packageId);
+    if (!pkg) return { success: false, message: "Paket tidak ditemukan!" };
+
+    if (pkg.status !== "DIBUAT") {
+      return { 
+        success: false, 
+        message: `Paket sudah berstatus '${pkg.status}'. Tidak perlu scan penerimaan ulang.` 
+      };
+    }
+
+    const timestamp = getFormattedTime();
+    pkg.status = "DITERIMA_KELURAHAN";
+    pkg.updatedAt = timestamp;
+
+    const newBlock = {
+      block: pkg.auditTrail.length + 1,
+      waktu: timestamp,
+      aksi: "SCAN_MASUK_KELURAHAN",
+      aktor: `${pkg.kelurahanAsal.nama} (${adminName})`,
+      deskripsi: "Paket fisik diterima di kantor kelurahan dan siap didistribusikan ke penerima.",
+      hash: generateSimulatedHash(pkg.id + timestamp + "SCAN_MASUK")
+    };
+
+    pkg.auditTrail.push(newBlock);
+    this.save();
+    return { success: true, package: pkg };
+  }
+
+  // 3. Dispatch Kurir Menuju Penerima (GPS Aktif)
+  dispatchKurir(packageId, kurirData) {
+    const pkg = this.getPackageById(packageId);
+    if (!pkg) return { success: false, message: "Paket tidak ditemukan!" };
+
+    const timestamp = getFormattedTime();
+    pkg.status = "DALAM_PENGIRIMAN";
+    pkg.updatedAt = timestamp;
+    pkg.kurir = {
+      nama: kurirData?.nama || "Budi Santoso",
+      telepon: kurirData?.telepon || "0812-7788-9900",
+      kendaraan: kurirData?.kendaraan || "Motor Logistik Bansos (B 3341 PKM)",
+      eta: "15 Menit",
+      lat: pkg.kelurahanAsal.lat,
+      lng: pkg.kelurahanAsal.lng
+    };
+
+    const newBlock = {
+      block: pkg.auditTrail.length + 1,
+      waktu: timestamp,
+      aksi: "DISPATCH_KURIR",
+      aktor: `Armada Logistik (${pkg.kurir.nama})`,
+      deskripsi: `Paket sedang dibawa kurir menuju alamat penerima (${pkg.penerima.alamat}). Pelacakan GPS diaktifkan.`,
+      hash: generateSimulatedHash(pkg.id + timestamp + "DISPATCH")
+    };
+
+    pkg.auditTrail.push(newBlock);
+    this.save();
+    return { success: true, package: pkg };
+  }
+
+  // 4. Update Koordinat GPS Kurir
+  updateKurirLocation(packageId, lat, lng, eta) {
+    const pkg = this.getPackageById(packageId);
+    if (pkg && pkg.kurir) {
+      pkg.kurir.lat = lat;
+      pkg.kurir.lng = lng;
+      if (eta) pkg.kurir.eta = eta;
+      this.save();
+    }
+  }
+
+  // 5. Verifikasi Penerimaan: Sesuai & Terima Bantuan (SELESAI)
+  verifySuccess(packageId, signatureData, catatan = "Bantuan telah diterima sesuai.") {
+    const pkg = this.getPackageById(packageId);
+    if (!pkg) return { success: false, message: "Paket tidak ditemukan!" };
+
+    const timestamp = getFormattedTime();
+    const bastNumber = `BAST-BANSOS/2026/XI/${Math.floor(1000 + Math.random() * 9000)}`;
+
+    pkg.status = "SELESAI";
+    pkg.updatedAt = timestamp;
+    if (pkg.kurir) pkg.kurir.eta = "Telah Tiba";
+
+    pkg.tandaTerima = {
+      nomorBAST: bastNumber,
+      waktuPenerimaan: timestamp,
+      namaPenerima: pkg.penerima.nama,
+      nikPenerima: pkg.penerima.nik,
+      statusVerifikasi: "SESUAI 100% TERVERIFIKASI",
+      catatan: catatan,
+      signatureData: signatureData
+    };
+
+    const newBlock = {
+      block: pkg.auditTrail.length + 1,
+      waktu: timestamp,
+      aksi: "VERIFIKASI_PENERIMA_SESUAI",
+      aktor: `Penerima Bansos (${pkg.penerima.nama} - NIK: ${pkg.penerima.nik})`,
+      deskripsi: `Penerima telah memverifikasi isi paket bansos 100% lengkap & menandatangani BAST Digital ${bastNumber}.`,
+      hash: generateSimulatedHash(pkg.id + timestamp + "VERIFIED_OK")
+    };
+
+    pkg.auditTrail.push(newBlock);
+    this.save();
+    return { success: true, package: pkg, bastNumber };
+  }
+
+  // 6. Verifikasi Penerimaan: Tidak Sesuai / Laporkan (BERMASALAH)
+  reportIssue(packageId, reportData) {
+    const pkg = this.getPackageById(packageId);
+    if (!pkg) return { success: false, message: "Paket tidak ditemukan!" };
+
+    const timestamp = getFormattedTime();
+    const tiketId = `LAP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    pkg.status = "BERMASALAH";
+    pkg.updatedAt = timestamp;
+
+    pkg.laporan = {
+      idTiket: tiketId,
+      waktuLapor: timestamp,
+      kategori: reportData.kategori,
+      kategoriTeks: reportData.kategoriTeks || reportData.kategori,
+      itemBermasalah: reportData.itemBermasalah || [],
+      keterangan: reportData.keterangan || "Tidak ada keterangan tambahan",
+      fotoUrl: reportData.fotoUrl || null,
+      statusTindakLanjut: "INVESTIGASI_KELURAHAN"
+    };
+
+    const newBlock = {
+      block: pkg.auditTrail.length + 1,
+      waktu: timestamp,
+      aksi: "LAPORAN_KETIDAKSESUAIAN",
+      aktor: `Penerima Bansos (${pkg.penerima.nama})`,
+      deskripsi: `Warga melaporkan ketidaksesuaian (${reportData.kategoriTeks}). Tiket: ${tiketId}. Perlu investigasi posko distribusi.`,
+      hash: generateSimulatedHash(pkg.id + timestamp + "REPORT_ISSUE")
+    };
+
+    pkg.auditTrail.push(newBlock);
+    this.save();
+    return { success: true, package: pkg, tiketId };
+  }
+
+  // 7. Resolusi Laporan Masalah (Kelurahan / Pemerintah)
+  resolveIssue(packageId, solusi, catatanAdmin) {
+    const pkg = this.getPackageById(packageId);
+    if (!pkg || !pkg.laporan) return { success: false, message: "Laporan tidak ditemukan!" };
+
+    const timestamp = getFormattedTime();
+    pkg.laporan.statusTindakLanjut = solusi;
+    pkg.laporan.catatanAdmin = catatanAdmin;
+
+    if (solusi === 'SELESAI_DAMAI') {
+      pkg.status = "SELESAI";
+    }
+
+    const newBlock = {
+      block: pkg.auditTrail.length + 1,
+      waktu: timestamp,
+      aksi: "RESOLUSI_PENGADUAN",
+      aktor: "Admin Kelurahan / Dinsos",
+      deskripsi: `Laporan warga ${pkg.laporan.idTiket} ditindaklanjuti dengan status: ${solusi}. Catatan: ${catatanAdmin}`,
+      hash: generateSimulatedHash(pkg.id + timestamp + "RESOLVE")
+    };
+
+    pkg.auditTrail.push(newBlock);
+    this.save();
+    return { success: true, package: pkg };
+  }
+}
+
+// Global Store Instance
+window.tracesStore = new BansosStore();
+
+
+  /* --- 3. QR & BARCODE HELPER --- */
+  /**
+ * TRACES-CO - QR Code & Barcode Helper
+ * Merender QR Code dan Barcode ke dalam elemen DOM/Canvas/SVG
+ * Handal baik online (via CDN library) maupun offline (via procedural SVG fallback)
+ */
+
+window.QRHelper = {
+  // Render QR Code ke container element
+  renderQR: function (container, text, size = 180) {
+    if (typeof container === 'string') {
+      container = document.getElementById(container);
+    }
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Jika library QRCode dari CDN tersedia
+    if (window.QRCode) {
+      try {
+        new QRCode(container, {
+          text: text,
+          width: size,
+          height: size,
+          colorDark: "#0B2545", // Government Navy
+          colorLight: "#FFFFFF",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        return;
+      } catch (e) {
+        console.warn("Gagal menggunakan QRCode CDN, beralih ke SVG visual generator", e);
+      }
+    }
+
+    // Fallback: Elegant Procedural SVG QR Matrix
+    container.innerHTML = this.generateFallbackQRSVG(text, size);
+  },
+
+  // Render Barcode ke canvas atau svg
+  renderBarcode: function (target, text, options = {}) {
+    if (typeof target === 'string') {
+      target = document.getElementById(target);
+    }
+    if (!target) return;
+
+    if (window.JsBarcode) {
+      try {
+        JsBarcode(target, text, {
+          format: "CODE128",
+          lineColor: "#0F172A",
+          width: options.width || 2,
+          height: options.height || 50,
+          displayValue: options.displayValue !== false,
+          fontSize: 13,
+          font: "monospace",
+          textMargin: 4,
+          background: "#FFFFFF"
+        });
+        return;
+      } catch (e) {
+        console.warn("Gagal menggunakan JsBarcode CDN, beralih ke SVG fallback", e);
+      }
+    }
+
+    // Fallback: Clean SVG Barcode
+    this.renderFallbackBarcodeSVG(target, text, options);
+  },
+
+  // Procedural SVG QR Code visual representation
+  generateFallbackQRSVG: function (text, size = 180) {
+    // Generate distinct pseudo-random modules based on text hash
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+
+    const grid = 25;
+    const cellSize = size / grid;
+    let rects = '';
+
+    // Helper draw Finder Pattern
+    const drawFinder = (startX, startY) => {
+      let f = '';
+      // Outer 7x7
+      f += `<rect x="${startX * cellSize}" y="${startY * cellSize}" width="${7 * cellSize}" height="${7 * cellSize}" fill="#0B2545" rx="3"/>`;
+      // White inner 5x5
+      f += `<rect x="${(startX + 1) * cellSize}" y="${(startY + 1) * cellSize}" width="${5 * cellSize}" height="${5 * cellSize}" fill="#FFFFFF" rx="2"/>`;
+      // Center 3x3
+      f += `<rect x="${(startX + 2) * cellSize}" y="${(startY + 2) * cellSize}" width="${3 * cellSize}" height="${3 * cellSize}" fill="#059669" rx="1.5"/>`;
+      return f;
+    };
+
+    rects += drawFinder(1, 1);
+    rects += drawFinder(grid - 8, 1);
+    rects += drawFinder(1, grid - 8);
+
+    // Fill modules with deterministic pattern
+    for (let r = 0; r < grid; r++) {
+      for (let c = 0; c < grid; c++) {
+        // Skip finders & separators
+        const inFinder1 = (r <= 8 && c <= 8);
+        const inFinder2 = (r <= 8 && c >= grid - 9);
+        const inFinder3 = (r >= grid - 9 && c <= 8);
+        if (inFinder1 || inFinder2 || inFinder3) continue;
+
+        // Timing patterns
+        if (r === 6 || c === 6) {
+          if ((r + c) % 2 === 0) {
+            rects += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize - 0.5}" height="${cellSize - 0.5}" fill="#0B2545" rx="0.5"/>`;
+          }
+          continue;
+        }
+
+        // Pseudo pseudo-random based on hash & coordinates
+        const val = Math.sin(r * 12.9898 + c * 78.233 + hash) * 43758.5453;
+        const isDark = (val - Math.floor(val)) > 0.46;
+
+        if (isDark) {
+          rects += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize - 0.5}" height="${cellSize - 0.5}" fill="#0B2545" rx="0.5"/>`;
+        }
+      }
+    }
+
+    // Emerald center shield watermark
+    const center = size / 2;
+    const badge = `
+      <circle cx="${center}" cy="${center}" r="${cellSize * 2.2}" fill="#FFFFFF" stroke="#059669" stroke-width="2"/>
+      <circle cx="${center}" cy="${center}" r="${cellSize * 1.6}" fill="#059669"/>
+      <path d="M ${center - 4} ${center} L ${center - 1} ${center + 3} L ${center + 5} ${center - 3}" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    `;
+
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" class="rounded-lg shadow-sm">
+        <rect width="${size}" height="${size}" fill="#FFFFFF" rx="8"/>
+        ${rects}
+        ${badge}
+      </svg>
+    `;
+  },
+
+  renderFallbackBarcodeSVG: function (target, text, options = {}) {
+    const width = options.width || 280;
+    const height = options.height || 54;
+    const barsCount = 45;
+    const barW = (width - 20) / barsCount;
+
+    let bars = '';
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) hash += text.charCodeAt(i);
+
+    for (let i = 0; i < barsCount; i++) {
+      const isThick = ((i * 7 + hash) % 3 === 0);
+      const isGap = ((i * 11 + hash) % 4 === 1);
+      if (!isGap) {
+        const x = 10 + i * barW;
+        const w = isThick ? barW * 0.9 : barW * 0.5;
+        bars += `<rect x="${x}" y="6" width="${w}" height="${height - 22}" fill="#0F172A"/>`;
+      }
+    }
+
+    const svg = `
+      <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${width}" height="${height}" fill="#FFFFFF"/>
+        ${bars}
+        <text x="${width / 2}" y="${height - 4}" font-family="monospace" font-size="11" font-weight="bold" fill="#334155" text-anchor="middle">${text}</text>
+      </svg>
+    `;
+
+    if (target.tagName.toLowerCase() === 'svg') {
+      target.outerHTML = svg;
+    } else {
+      target.innerHTML = svg;
+    }
+  }
+};
+
+
+  /* --- 4. GPS TRACKER & MAP ENGINE --- */
+  /**
+ * TRACES-CO - GPS Tracking & Telemetry Module
+ * Modul pemantauan pergerakan kurir bansos secara real-time
+ */
+
+class GPSTracker {
+  constructor(mapContainerId, telemetryContainerId) {
+    this.mapContainerId = mapContainerId;
+    this.telemetryContainerId = telemetryContainerId;
+    this.map = null;
+    this.routePolyline = null;
+    this.courierMarker = null;
+    this.originMarker = null;
+    this.destMarker = null;
+    this.currentPackage = null;
+    this.animInterval = null;
+    this.progress = 0.45; // 0.0 to 1.0
+  }
+
+  init(pkg) {
+    this.currentPackage = pkg;
+    const container = document.getElementById(this.mapContainerId);
+    if (!container) return;
+
+    if (!pkg || !pkg.penerima) {
+      container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center">
+          <svg class="w-12 h-12 mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 16.382V5.618a2 2 0 011.447-1.894L9 1m0 19l6-3m-6 3V1m6 19l5.447-2.724A2 2 0 0021 16.382V5.618a2 2 0 00-1.447-1.894L15 1m0 19V1m0 0L9 4"></path>
+          </svg>
+          <p class="font-medium text-xs">Pilih paket dengan status "Dalam Pengiriman" untuk melihat modul GPS Live.</p>
+        </div>
+      `;
+      this.updateTelemetry(null);
+      return;
+    }
+
+    // Hitung posisi awal (Kelurahan) dan tujuan (Penerima)
+    const origin = [pkg.kelurahanAsal?.lat || -6.1945, pkg.kelurahanAsal?.lng || 106.8315];
+    const dest = [pkg.penerima?.lat || -6.1985, pkg.penerima?.lng || 106.8402];
+
+    // Cek ketersediaan Leaflet dengan fallback aman
+    if (window.L && typeof window.L.map === 'function') {
+      try {
+        this.renderLeafletMap(container, origin, dest, pkg);
+      } catch (err) {
+        console.warn("Leaflet error, menggunakan fallback peta taktis vektor:", err);
+        this.renderFallbackMap(container, origin, dest, pkg);
+      }
+    } else {
+      this.renderFallbackMap(container, origin, dest, pkg);
+    }
+
+    this.updateTelemetry(pkg);
+  }
+
+  renderLeafletMap(container, origin, dest, pkg) {
+    // 1. Bersihkan instance map lama dan _leaflet_id untuk mencegah error "Map container is already initialized"
+    if (this.map) {
+      try {
+        this.map.remove();
+      } catch (e) {}
+      this.map = null;
+    }
+
+    if (container._leaflet_id) {
+      try {
+        delete container._leaflet_id;
+      } catch (e) {
+        container._leaflet_id = null;
+      }
+    }
+
+    container.innerHTML = '';
+
+    // Cek ukuran kontainer agar Leaflet tidak menghitung batas NaN
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Jika parent belum sepenuhnya terlihat (misal tab baru dibuka)
+      this.renderFallbackMap(container, origin, dest, pkg);
+      return;
+    }
+
+    const midLat = (origin[0] + dest[0]) / 2;
+    const midLng = (origin[1] + dest[1]) / 2;
+
+    this.map = L.map(this.mapContainerId, {
+      zoomControl: true,
+      attributionControl: false
+    }).setView([midLat, midLng], 15);
+
+    try {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(this.map);
+    } catch (e) {
+      console.warn("Tile layer warning:", e);
+    }
+
+    // Custom Icon Posko Kelurahan
+    const kelurahanIcon = L.divIcon({
+      className: 'custom-map-marker',
+      html: `
+        <div class="relative flex items-center justify-center w-9 h-9 bg-blue-900 text-white rounded-full border-2 border-white shadow-lg">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          </svg>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+
+    // Custom Icon Rumah Penerima
+    const destIcon = L.divIcon({
+      className: 'custom-map-marker',
+      html: `
+        <div class="relative flex items-center justify-center w-9 h-9 bg-emerald-600 text-white rounded-full border-2 border-white shadow-lg animate-bounce">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+
+    // Custom Icon Kurir Bansos dengan Radar Pulse
+    const courierIcon = L.divIcon({
+      className: 'custom-courier-marker',
+      html: `
+        <div class="relative flex items-center justify-center">
+          <div class="absolute w-10 h-10 bg-emerald-400 rounded-full animate-ping opacity-75"></div>
+          <div class="relative flex items-center justify-center w-9 h-9 bg-emerald-700 text-white rounded-full border-2 border-white shadow-xl">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+
+    // Pasang Marker Kelurahan & Penerima
+    this.originMarker = L.marker(origin, { icon: kelurahanIcon }).addTo(this.map)
+      .bindPopup(`<b>${pkg.kelurahanAsal?.nama || 'Kelurahan'}</b><br>Titik Awal Distribusi Bansos`);
+
+    this.destMarker = L.marker(dest, { icon: destIcon }).addTo(this.map)
+      .bindPopup(`<b>Alamat Penerima: ${pkg.penerima.nama}</b><br>${pkg.penerima.alamat}`);
+
+    // Garis Rute (Polyline)
+    const points = [
+      origin,
+      [origin[0] + (dest[0] - origin[0]) * 0.4, origin[1] + (dest[1] - origin[1]) * 0.2],
+      [origin[0] + (dest[0] - origin[0]) * 0.7, origin[1] + (dest[1] - origin[1]) * 0.8],
+      dest
+    ];
+
+    this.routePolyline = L.polyline(points, {
+      color: '#2563EB',
+      weight: 4,
+      opacity: 0.8,
+      dashArray: '8, 8'
+    }).addTo(this.map);
+
+    // Hitung posisi kurir saat ini berdasarkan progress
+    const curLat = origin[0] + (dest[0] - origin[0]) * this.progress;
+    const curLng = origin[1] + (dest[1] - origin[1]) * this.progress;
+
+    this.courierMarker = L.marker([curLat, curLng], { icon: courierIcon }).addTo(this.map)
+      .bindPopup(`<b>Kurir Bansos: ${pkg.kurir?.nama || 'Petugas'}</b><br>Armada: ${pkg.kurir?.kendaraan || 'Logistik'}`);
+
+    try {
+      const bounds = L.latLngBounds([origin, dest]);
+      this.map.fitBounds(bounds, { padding: [40, 40] });
+    } catch (e) {}
+  }
+
+  renderFallbackMap(container, origin, dest, pkg) {
+    if (this.map) {
+      try { this.map.remove(); } catch(e){}
+      this.map = null;
+    }
+    if (container._leaflet_id) {
+      delete container._leaflet_id;
+    }
+
+    container.innerHTML = `
+      <div class="relative w-full h-full bg-slate-900 overflow-hidden rounded-xl border border-slate-700 p-4 select-none">
+        <!-- Grid pattern -->
+        <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:20px_20px] opacity-40"></div>
+        
+        <!-- Radar Circles -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-blue-500/20 rounded-full animate-pulse"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-emerald-500/20 rounded-full"></div>
+        
+        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 600 320" preserveAspectRatio="none">
+          <!-- Route Line -->
+          <path d="M 80,160 Q 250,80 320,150 T 520,160" fill="none" stroke="#2563EB" stroke-width="4" stroke-dasharray="8 6"/>
+          
+          <!-- Origin (Kelurahan) -->
+          <circle cx="80" cy="160" r="14" fill="#0B2545" stroke="#60A5FA" stroke-width="3"/>
+          <text x="80" y="195" fill="#93C5FD" font-size="11" font-weight="bold" text-anchor="middle">Kantor Kelurahan</text>
+          
+          <!-- Target (Penerima) -->
+          <circle cx="520" cy="160" r="14" fill="#059669" stroke="#A7F3D0" stroke-width="3"/>
+          <text x="520" y="195" fill="#34D399" font-size="11" font-weight="bold" text-anchor="middle">Rumah ${pkg.penerima?.nama || 'Warga'}</text>
+          
+          <!-- Moving Courier -->
+          <g transform="translate(${80 + 440 * this.progress}, ${160 + Math.sin(this.progress * Math.PI) * -35})">
+            <circle cx="0" cy="0" r="18" fill="#10B981" opacity="0.4" class="animate-ping"/>
+            <circle cx="0" cy="0" r="12" fill="#047857" stroke="#FFFFFF" stroke-width="2.5"/>
+            <path d="M -4,-3 L 4,-3 L 0,5 Z" fill="#FFFFFF"/>
+            <text x="0" y="-18" fill="#FACC15" font-size="10" font-weight="bold" text-anchor="middle">Kurir Bansos</text>
+          </g>
+        </svg>
+
+        <div class="absolute bottom-2 left-2 bg-slate-800/90 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-700 text-[10px] text-slate-300">
+          🛰️ Mode Navigasi Taktis Vektor (Real-Time GPS Tracking)
+        </div>
+      </div>
+    `;
+  }
+
+  updateTelemetry(pkg) {
+    const el = document.getElementById(this.telemetryContainerId);
+    if (!el) return;
+
+    if (!pkg || !pkg.kurir) {
+      el.innerHTML = `
+        <div class="text-xs text-slate-500 italic p-3 text-center">
+          Tidak ada data telemetri kurir aktif untuk paket ini.
+        </div>
+      `;
+      return;
+    }
+
+    const distanceRemaining = Math.max(0, Math.round((1 - this.progress) * 1450));
+    const speed = this.progress >= 1 ? 0 : Math.round(22 + Math.sin(Date.now() / 1000) * 4);
+    const etaMinutes = this.progress >= 1 ? "Tiba di Lokasi" : `${Math.ceil((1 - this.progress) * 12)} Menit`;
+
+    el.innerHTML = `
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
+          <div class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Kurir Petugas</div>
+          <div class="text-sm font-bold text-slate-800 truncate">${pkg.kurir.nama || 'Petugas'}</div>
+          <div class="text-xs text-slate-500 truncate">${pkg.kurir.kendaraan || 'Armada'}</div>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
+          <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Estimasi Tiba (ETA)</div>
+          <div class="text-sm font-bold text-emerald-800">${etaMinutes}</div>
+          <div class="text-xs text-slate-500">Jarak: ${distanceRemaining} meter lagi</div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+          <div class="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Kecepatan GPS</div>
+          <div class="text-sm font-bold text-slate-800">${speed} km/jam</div>
+          <div class="text-xs text-emerald-600 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sinyal Satelit 4G OK
+          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+          <div class="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Progress Perjalanan</div>
+          <div class="text-sm font-bold text-blue-800">${Math.round(this.progress * 100)}%</div>
+          <div class="w-full bg-slate-200 rounded-full h-1.5 mt-1.5 overflow-hidden">
+            <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: ${this.progress * 100}%"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  stepForward(percent = 0.25) {
+    if (!this.currentPackage) return;
+    this.progress = Math.min(1.0, this.progress + percent);
+    this.init(this.currentPackage);
+
+    if (this.progress >= 1.0) {
+      if (window.tracesStore) {
+        window.tracesStore.updateKurirLocation(
+          this.currentPackage.id,
+          this.currentPackage.penerima?.lat || -6.1985,
+          this.currentPackage.penerima?.lng || 106.8402,
+          "Telah Tiba di Alamat"
+        );
+      }
+    }
+  }
+
+  resetPosition() {
+    this.progress = 0.15;
+    this.init(this.currentPackage);
+  }
+
+  arriveAtDestination() {
+    this.progress = 1.0;
+    this.init(this.currentPackage);
+  }
+}
+
+window.gpsTracker = new GPSTracker('mapCanvas', 'telemetryPanel');
+window.mobileGPSTracker = new GPSTracker('mobileMapCanvas', 'mobileTelemetryPanel');
+
+
+  /* --- 5. APPLICATION CONTROLLER --- */
+  /**
+ * TRACES-CO - Main Application Controller
+ * Mengendalikan UI interaktif 3 Role: Pemerintah, Kelurahan, Penerima Bantuan
+ */
+
+// --- 1. WEB AUDIO SYNTHESIZER ---
+class SoundEffects {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+  }
+
+  init() {
+    try {
+      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch (e) {
+      this.ctx = null;
+    }
+  }
+
+  playBeep() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.12);
+    } catch (e) {}
+  }
+
+  playSuccess() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(this.ctx.currentTime + idx * 0.08);
+        osc.stop(this.ctx.currentTime + idx * 0.08 + 0.25);
+      });
+    } catch (e) {}
+  }
+
+  playAlert() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+      osc.frequency.setValueAtTime(240, this.ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.35);
+    } catch (e) {}
+  }
+}
+
+const sfx = new SoundEffects();
+
+// --- 2. SIGNATURE PAD CONTROLLER ---
+class SignaturePad {
+  constructor(canvasId) {
+    this.canvasId = canvasId;
+    this.canvas = null;
+    this.ctx = null;
+    this.isDrawing = false;
+    this.hasSignature = false;
+  }
+
+  init() {
+    this.canvas = document.getElementById(this.canvasId);
+    if (!this.canvas) return;
+
+    this.ctx = this.canvas.getContext('2d');
+    const rect = this.canvas.getBoundingClientRect();
+    const w = rect.width > 0 ? rect.width : 340;
+    const h = rect.height > 0 ? rect.height : 140;
+
+    this.canvas.width = w * 2;
+    this.canvas.height = h * 2;
+    this.ctx.scale(2, 2);
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.ctx.strokeStyle = '#047857';
+    this.ctx.lineWidth = 2.5;
+
+    // Mouse Events
+    this.canvas.onmousedown = (e) => this.start(e);
+    this.canvas.onmousemove = (e) => this.draw(e);
+    this.canvas.onmouseup = () => this.stop();
+    this.canvas.onmouseleave = () => this.stop();
+
+    // Touch Events
+    this.canvas.ontouchstart = (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.start({ clientX: touch.clientX, clientY: touch.clientY });
+    };
+
+    this.canvas.ontouchmove = (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.draw({ clientX: touch.clientX, clientY: touch.clientY });
+    };
+
+    this.canvas.ontouchend = (e) => {
+      e.preventDefault();
+      this.stop();
+    };
+  }
+
+  getPos(e) {
+    if (!this.canvas) return { x: 0, y: 0 };
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }
+
+  start(e) {
+    this.isDrawing = true;
+    const pos = this.getPos(e);
+    if (this.ctx) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos.x, pos.y);
+    }
+  }
+
+  draw(e) {
+    if (!this.isDrawing || !this.ctx) return;
+    const pos = this.getPos(e);
+    this.ctx.lineTo(pos.x, pos.y);
+    this.ctx.stroke();
+    this.hasSignature = true;
+  }
+
+  stop() {
+    this.isDrawing = false;
+  }
+
+  clear() {
+    if (!this.ctx || !this.canvas) return;
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.hasSignature = false;
+  }
+
+  getDataURL() {
+    if (!this.hasSignature || !this.canvas) return null;
+    return this.canvas.toDataURL('image/png');
+  }
+}
+
+let signPad = new SignaturePad('signatureCanvas');
+
+// --- 3. UI RENDERING & EVENT CONTROLLERS ---
+
+document.addEventListener('DOMContentLoaded', () => {
+  initApp();
+
+  // Sinkronisasi Perubahan Data
+  if (window.tracesStore) {
+    window.tracesStore.subscribe(() => {
+      renderApp();
+    });
+  }
+});
+
+function initApp() {
+  setupEventListeners();
+  renderApp();
+}
+
+function setupEventListeners() {
+  // Role Selector Buttons
+  document.querySelectorAll('[data-role-btn]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const role = e.currentTarget.getAttribute('data-role-btn');
+      if (window.tracesStore) {
+        window.tracesStore.setRole(role);
+      }
+      sfx.playBeep();
+    });
+  });
+
+  // Citizen Switcher (Role Penerima)
+  const citizenSelect = document.getElementById('citizenSelect');
+  if (citizenSelect) {
+    citizenSelect.addEventListener('change', (e) => {
+      if (window.tracesStore) {
+        window.tracesStore.setActiveCitizen(e.target.value);
+      }
+      sfx.playBeep();
+    });
+  }
+
+  // Toggle Smartphone Mockup Frame
+  const toggleMobileFrameBtn = document.getElementById('toggleMobileFrameBtn');
+  if (toggleMobileFrameBtn) {
+    toggleMobileFrameBtn.addEventListener('click', () => {
+      const wrapper = document.getElementById('mobileAppContainer');
+      if (wrapper) {
+        const isMockup = wrapper.classList.toggle('smartphone-wrapper');
+        toggleMobileFrameBtn.innerText = isMockup ? "🖥️ Tampilan Lebar" : "📱 Tampilan HP Mockup";
+      }
+    });
+  }
+
+  // Sound Mute Toggle
+  const soundToggleBtn = document.getElementById('soundToggleBtn');
+  if (soundToggleBtn) {
+    soundToggleBtn.addEventListener('click', () => {
+      sfx.muted = !sfx.muted;
+      soundToggleBtn.innerHTML = sfx.muted ? "🔇 Suara Mati" : "🔊 Suara Aktif";
+    });
+  }
+
+  // Reset Data Demo Button
+  const resetDemoBtn = document.getElementById('resetDemoBtn');
+  if (resetDemoBtn) {
+    resetDemoBtn.addEventListener('click', () => {
+      if (confirm("Reset seluruh data ke demo awal (5 paket bantuan sosial)?")) {
+        if (window.tracesStore) {
+          window.tracesStore.resetToDefault();
+        }
+        sfx.playAlert();
+      }
+    });
+  }
+
+  // Form Tambah Paket Baru (Pemerintah)
+  const formNewPackage = document.getElementById('formNewPackage');
+  if (formNewPackage) {
+    formNewPackage.addEventListener('submit', handleNewPackageSubmit);
+  }
+
+  // Kelurahan GPS Filter Selector
+  const kelurahanPkgSelect = document.getElementById('kelurahanPkgSelect');
+  if (kelurahanPkgSelect) {
+    kelurahanPkgSelect.addEventListener('change', (e) => {
+      if (window.tracesStore && window.gpsTracker) {
+        const pkg = window.tracesStore.getPackageById(e.target.value);
+        window.gpsTracker.init(pkg);
+      }
+    });
+  }
+
+  // GPS Simulation Action Buttons
+  const btnGpsStep = document.getElementById('btnGpsStep');
+  if (btnGpsStep) {
+    btnGpsStep.addEventListener('click', () => {
+      if (window.gpsTracker) window.gpsTracker.stepForward(0.25);
+      sfx.playBeep();
+    });
+  }
+
+  const btnGpsArrive = document.getElementById('btnGpsArrive');
+  if (btnGpsArrive) {
+    btnGpsArrive.addEventListener('click', () => {
+      if (window.gpsTracker) window.gpsTracker.arriveAtDestination();
+      sfx.playSuccess();
+    });
+  }
+
+  const btnGpsReset = document.getElementById('btnGpsReset');
+  if (btnGpsReset) {
+    btnGpsReset.addEventListener('click', () => {
+      if (window.gpsTracker) window.gpsTracker.resetPosition();
+      sfx.playBeep();
+    });
+  }
+
+  // Clear Signature Button
+  const btnClearSign = document.getElementById('btnClearSign');
+  if (btnClearSign) {
+    btnClearSign.addEventListener('click', () => {
+      if (signPad) signPad.clear();
+    });
+  }
+
+  // Confirm Signature & Selesai (Role Penerima)
+  const btnConfirmReceive = document.getElementById('btnConfirmReceive');
+  if (btnConfirmReceive) {
+    btnConfirmReceive.addEventListener('click', handleVerifySuccessSubmit);
+  }
+
+  // Submit Laporan Masalah (Role Penerima)
+  const formReportIssue = document.getElementById('formReportIssue');
+  if (formReportIssue) {
+    formReportIssue.addEventListener('submit', handleReportIssueSubmit);
+  }
+
+  // Filter & Search Table Pemerintah
+  const tableSearchInput = document.getElementById('tableSearchInput');
+  const tableStatusFilter = document.getElementById('tableStatusFilter');
+  const tableKelurahanFilter = document.getElementById('tableKelurahanFilter');
+
+  if (tableSearchInput) tableSearchInput.addEventListener('input', renderPemerintahTable);
+  if (tableStatusFilter) tableStatusFilter.addEventListener('change', renderPemerintahTable);
+  if (tableKelurahanFilter) tableKelurahanFilter.addEventListener('change', renderPemerintahTable);
+}
+
+// --- RENDER APP ---
+function renderApp() {
+  if (!window.tracesStore) return;
+
+  const role = window.tracesStore.activeRole || "PEMERINTAH";
+  const packages = window.tracesStore.getPackages() || [];
+
+  // 1. Update Role Buttons UI dengan kontras warna yang jelas
+  document.querySelectorAll('[data-role-btn]').forEach(btn => {
+    const btnRole = btn.getAttribute('data-role-btn');
+    if (btnRole === role) {
+      btn.className = "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white shadow-md transition-all whitespace-nowrap";
+    } else {
+      btn.className = "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-gov-800 transition-all whitespace-nowrap";
+    }
+  });
+
+  // 2. Tampilkan Role Container yang Aktif
+  const elPem = document.getElementById('viewPemerintah');
+  const elKel = document.getElementById('viewKelurahan');
+  const elPen = document.getElementById('viewPenerima');
+
+  if (elPem) elPem.classList.toggle('hidden', role !== 'PEMERINTAH');
+  if (elKel) elKel.classList.toggle('hidden', role !== 'KELURAHAN');
+  if (elPen) elPen.classList.toggle('hidden', role !== 'PENERIMA');
+
+  // 3. Render Spesifik View dengan perlindungan try-catch
+  try {
+    if (role === 'PEMERINTAH') {
+      renderPemerintahView(packages);
+    } else if (role === 'KELURAHAN') {
+      renderKelurahanView(packages);
+    } else if (role === 'PENERIMA') {
+      renderPenerimaView(packages);
+    }
+  } catch (err) {
+    console.error("Error rendering view for role:", role, err);
+  }
+}
+
+// ==========================================
+// 🏛️ ROLE 1: PEMERINTAH (DASHBOARD PUSAT)
+// ==========================================
+function renderPemerintahView(packages) {
+  const total = packages.length;
+  const dibuat = packages.filter(p => p.status === 'DIBUAT').length;
+  const kelurahan = packages.filter(p => p.status === 'DITERIMA_KELURAHAN').length;
+  const kirim = packages.filter(p => p.status === 'DALAM_PENGIRIMAN').length;
+  const selesai = packages.filter(p => p.status === 'SELESAI').length;
+  const masalah = packages.filter(p => p.status === 'BERMASALAH').length;
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('statTotal', total);
+  setTxt('statDibuat', dibuat);
+  setTxt('statKelurahan', kelurahan);
+  setTxt('statPengiriman', kirim);
+  setTxt('statSelesai', selesai);
+  setTxt('statMasalah', masalah);
+
+  renderPemerintahTable();
+}
+
+function renderPemerintahTable() {
+  if (!window.tracesStore) return;
+  const packages = window.tracesStore.getPackages();
+  const search = (document.getElementById('tableSearchInput')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('tableStatusFilter')?.value || 'ALL';
+  const kelurahanFilter = document.getElementById('tableKelurahanFilter')?.value || 'ALL';
+
+  const tbody = document.getElementById('packagesTableBody');
+  if (!tbody) return;
+
+  const filtered = packages.filter(pkg => {
+    const matchSearch = !search ||
+      pkg.id.toLowerCase().includes(search) ||
+      pkg.penerima?.nama?.toLowerCase().includes(search) ||
+      pkg.penerima?.nik?.includes(search);
+    const matchStatus = statusFilter === 'ALL' || pkg.status === statusFilter;
+    const matchKelurahan = kelurahanFilter === 'ALL' || pkg.penerima?.kelurahan === kelurahanFilter;
+    return matchSearch && matchStatus && matchKelurahan;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-8 text-slate-400">
+          Tidak ada data paket bansos yang sesuai dengan filter pencarian.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(pkg => {
+    const statusBadge = getStatusBadgeHTML(pkg.status);
+    const itemsPreview = pkg.items ? pkg.items.map(it => `${it.nama} (${it.jumlah})`).join(', ') : '-';
+    const lastBlock = pkg.auditTrail && pkg.auditTrail.length > 0 ? pkg.auditTrail[pkg.auditTrail.length - 1] : null;
+    const hashPreview = lastBlock?.hash ? lastBlock.hash.substring(0, 10) + '...' : '-';
+
+    return `
+      <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+        <td class="py-3 px-4 font-mono-code font-bold text-blue-900 text-xs">
+          ${pkg.id}
+          <div class="text-[10px] text-slate-400 font-normal">${pkg.createdAt || ''}</div>
+        </td>
+        <td class="py-3 px-4">
+          <div class="font-bold text-slate-800 text-sm">${pkg.penerima?.nama || '-'}</div>
+          <div class="text-xs text-slate-500 font-mono-code">NIK: ${formatMaskedNIK(pkg.penerima?.nik)}</div>
+          <div class="text-[11px] text-slate-400 truncate max-w-xs">${pkg.penerima?.alamat || ''}</div>
+        </td>
+        <td class="py-3 px-4">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
+            ${pkg.penerima?.kelurahan || '-'}
+          </span>
+        </td>
+        <td class="py-3 px-4 text-xs text-slate-600 max-w-xs truncate" title="${itemsPreview}">
+          ${itemsPreview}
+        </td>
+        <td class="py-3 px-4">
+          ${statusBadge}
+        </td>
+        <td class="py-3 px-4 font-mono-code text-[11px] text-slate-500">
+          <span title="${lastBlock?.hash || ''}">
+            ${hashPreview}
+          </span>
+        </td>
+        <td class="py-3 px-4 text-right">
+          <div class="flex items-center justify-end gap-1.5">
+            <button onclick="openStickerModal('${pkg.id}')" title="Cetak QR Sticker" class="p-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-medium">
+              🏷️ QR & Label
+            </button>
+            <button onclick="openAuditModal('${pkg.id}')" title="Lihat Riwayat Audit Blockchain" class="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-xs">
+              📜 Audit
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function handleNewPackageSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const namaPenerima = form.namaPenerima?.value?.trim() || "";
+  let nik = form.nik?.value?.trim() || "";
+  const kelurahan = form.kelurahan?.value || "Menteng";
+  const noHp = form.noHp?.value?.trim() || "0812-0000-0000";
+  const alamat = form.alamat?.value?.trim() || "";
+  const operator = form.operator?.value?.trim() || "Admin Kemensos RI";
+
+  if (!namaPenerima || !nik || !alamat) {
+    alert("Harap lengkapi semua kolom wajib (Nama Penerima, NIK, dan Alamat)!");
+    return;
+  }
+
+  // Bersihkan NIK: ambil angka saja
+  nik = nik.replace(/\D/g, '');
+  if (!nik) {
+    alert("NIK harus berupa angka!");
+    return;
+  }
+  // Auto-pad jika kurang dari 16 digit untuk mempermudah testing
+  if (nik.length < 16) {
+    nik = nik.padEnd(16, '0');
+  }
+
+  const items = [
+    { nama: "Beras Premium", jumlah: "5 kg", checked: true },
+    { nama: "Minyak Goreng Kemasan", jumlah: "1 Liter", checked: true },
+    { nama: "Gula Pasir Kristal", jumlah: "1 kg", checked: true }
+  ];
+
+  if (form.itemSarden?.checked) {
+    items.push({ nama: "Sarden Saus Tomat", jumlah: "2 Kaleng", checked: true });
+  }
+  if (form.itemMie?.checked) {
+    items.push({ nama: "Mie Instan", jumlah: "10 Bungkus", checked: true });
+  }
+
+  // Reset filter tabel agar paket baru langsung tampil di urutan teratas
+  const searchInp = document.getElementById('tableSearchInput');
+  const statFilt = document.getElementById('tableStatusFilter');
+  const kelFilt = document.getElementById('tableKelurahanFilter');
+  if (searchInp) searchInp.value = '';
+  if (statFilt) statFilt.value = 'ALL';
+  if (kelFilt) kelFilt.value = 'ALL';
+
+  const newPkg = window.tracesStore.addPackage({
+    namaPenerima,
+    nik,
+    kelurahan,
+    noHp,
+    alamat,
+    operator,
+    items
+  });
+
+  form.reset();
+  sfx.playSuccess();
+
+  // Buka modal stiker label untuk paket yang baru dibuat
+  setTimeout(() => {
+    openStickerModal(newPkg.id);
+  }, 100);
+}
+
+// ==========================================
+// 🏢 ROLE 2: KELURAHAN (ADMIN DISTRIBUSI)
+// ==========================================
+function renderKelurahanView(packages) {
+  // Dropdown list paket untuk GPS Map
+  const kelurahanPkgSelect = document.getElementById('kelurahanPkgSelect');
+  if (kelurahanPkgSelect) {
+    const activePackages = packages.filter(p => p.status === 'DALAM_PENGIRIMAN' || p.status === 'DITERIMA_KELURAHAN');
+    const curVal = kelurahanPkgSelect.value;
+
+    if (activePackages.length > 0) {
+      kelurahanPkgSelect.innerHTML = activePackages.map(p => `
+        <option value="${p.id}" ${p.id === curVal ? 'selected' : ''}>
+          ${p.id} - ${p.penerima?.nama || ''} (${p.penerima?.kelurahan || ''}) [${p.status}]
+        </option>
+      `).join('');
+    } else {
+      kelurahanPkgSelect.innerHTML = packages.map(p => `
+        <option value="${p.id}" ${p.id === curVal ? 'selected' : ''}>
+          ${p.id} - ${p.penerima?.nama || ''} [${p.status}]
+        </option>
+      `).join('');
+    }
+
+    const selectedPkg = window.tracesStore.getPackageById(kelurahanPkgSelect.value) ||
+      packages.find(p => p.status === 'DALAM_PENGIRIMAN') ||
+      packages[0];
+
+    if (window.gpsTracker) {
+      window.gpsTracker.init(selectedPkg);
+    }
+  }
+
+  renderKelurahanPendingScan(packages);
+  renderKelurahanReadyDispatch(packages);
+  renderKelurahanIncidentInbox(packages);
+}
+
+function renderKelurahanPendingScan(packages) {
+  const container = document.getElementById('kelurahanPendingScanList');
+  if (!container) return;
+
+  const pending = packages.filter(p => p.status === 'DIBUAT');
+
+  if (pending.length === 0) {
+    container.innerHTML = `
+      <div class="text-xs text-slate-400 italic p-4 text-center">
+        Tidak ada paket baru dari Pusat yang menunggu scan masuk.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = pending.map(pkg => `
+    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+      <div>
+        <div class="text-xs font-mono-code font-bold text-blue-900">${pkg.id}</div>
+        <div class="text-sm font-semibold text-slate-800">${pkg.penerima?.nama || '-'}</div>
+        <div class="text-xs text-slate-500">Kelurahan: ${pkg.penerima?.kelurahan || '-'}</div>
+      </div>
+      <button onclick="executeScanKelurahan('${pkg.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
+        <span>📷</span> Scan Terima
+      </button>
+    </div>
+  `).join('');
+}
+
+function executeScanKelurahan(pkgId) {
+  sfx.playBeep();
+  if (!window.tracesStore) return;
+  const res = window.tracesStore.scanKelurahanMasuk(pkgId, "Admin Posko Kelurahan");
+  if (res.success) {
+    sfx.playSuccess();
+    alert(`Berhasil Scan Masuk!\nPaket ${pkgId} telah diverifikasi tiba di kantor Kelurahan dan modul GPS siap diaktifkan.`);
+  } else {
+    alert(res.message);
+  }
+}
+
+function renderKelurahanReadyDispatch(packages) {
+  const container = document.getElementById('kelurahanReadyDispatchList');
+  if (!container) return;
+
+  const ready = packages.filter(p => p.status === 'DITERIMA_KELURAHAN');
+
+  if (ready.length === 0) {
+    container.innerHTML = `
+      <div class="text-xs text-slate-400 italic p-4 text-center">
+        Tidak ada paket yang menunggu penugasan kurir.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = ready.map(pkg => `
+    <div class="flex items-center justify-between p-3 bg-emerald-50/50 rounded-xl border border-emerald-200">
+      <div>
+        <div class="text-xs font-mono-code font-bold text-emerald-900">${pkg.id}</div>
+        <div class="text-sm font-semibold text-slate-800">${pkg.penerima?.nama || '-'}</div>
+        <div class="text-xs text-slate-500">${pkg.penerima?.alamat || ''}</div>
+      </div>
+      <button onclick="executeDispatchKurir('${pkg.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
+        <span>🚚</span> Kirim ke Alamat
+      </button>
+    </div>
+  `).join('');
+}
+
+function executeDispatchKurir(pkgId) {
+  const kurirNama = prompt("Masukkan Nama Petugas Kurir:", "Budi Santoso");
+  if (!kurirNama) return;
+
+  sfx.playBeep();
+  if (!window.tracesStore) return;
+  const res = window.tracesStore.dispatchKurir(pkgId, {
+    nama: kurirNama,
+    kendaraan: "Motor Logistik Bansos (B 3341 PKM)",
+    telepon: "0812-3344-5566"
+  });
+
+  if (res.success) {
+    sfx.playSuccess();
+    alert(`Kurir Ditugaskan!\nPaket ${pkgId} kini 'Dalam Pengiriman' menuju alamat warga. Pelacakan GPS real-time aktif.`);
+  }
+}
+
+function renderKelurahanIncidentInbox(packages) {
+  const container = document.getElementById('kelurahanIncidentInbox');
+  const badgeCount = document.getElementById('incidentBadgeCount');
+  if (!container) return;
+
+  const reported = packages.filter(p => p.status === 'BERMASALAH' && p.laporan);
+
+  if (badgeCount) {
+    badgeCount.innerText = reported.length;
+    badgeCount.classList.toggle('hidden', reported.length === 0);
+  }
+
+  if (reported.length === 0) {
+    container.innerHTML = `
+      <div class="text-xs text-slate-400 italic p-4 text-center bg-slate-50 rounded-xl col-span-2">
+        🎉 Tidak ada laporan ketidaksesuaian aktif. Semua distribusi berjalan lancar.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = reported.map(pkg => `
+    <div class="p-4 bg-red-50 rounded-xl border border-red-200 space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-red-600 text-white font-mono-code">
+          TIKET: ${pkg.laporan.idTiket}
+        </span>
+        <span class="text-xs text-red-600 font-medium">${pkg.laporan.waktuLapor}</span>
+      </div>
+
+      <div class="font-bold text-slate-800 text-sm">
+        ${pkg.penerima?.nama || '-'} (NIK: ${formatMaskedNIK(pkg.penerima?.nik)})
+      </div>
+      <div class="text-xs text-red-700 font-semibold">
+        Kendala: ${pkg.laporan.kategoriTeks}
+      </div>
+      <div class="text-xs text-slate-600 bg-white/80 p-2.5 rounded-lg border border-red-100 italic">
+        "${pkg.laporan.keterangan}"
+      </div>
+
+      ${pkg.laporan.fotoUrl ? `
+        <div class="mt-2">
+          <div class="text-[11px] font-semibold text-slate-500 mb-1">Bukti Foto dari Penerima:</div>
+          <div class="w-full max-h-36 overflow-hidden rounded-lg border border-red-200">
+            <img src="${pkg.laporan.fotoUrl}" class="w-full object-cover" alt="Bukti Foto">
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="pt-2 flex items-center justify-between border-t border-red-200">
+        <span class="text-xs text-slate-500">Status: <b class="text-red-700">${pkg.laporan.statusTindakLanjut}</b></span>
+        <button onclick="openResolveModal('${pkg.id}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm">
+          Tindak Lanjut & Selesaikan
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ==========================================
+// 📱 ROLE 3: PENERIMA BANTUAN (MOBILE APP)
+// ==========================================
+function renderPenerimaView(packages) {
+  if (!window.tracesStore) return;
+  const activeCitizenId = window.tracesStore.activeCitizenId;
+  const pkg = window.tracesStore.getPackageById(activeCitizenId) || packages[0];
+  if (!pkg) return;
+
+  const select = document.getElementById('citizenSelect');
+  if (select) {
+    select.innerHTML = packages.map(p => `
+      <option value="${p.id}" ${p.id === pkg.id ? 'selected' : ''}>
+        ${p.penerima?.nama || ''} (${p.id} - ${p.status})
+      </option>
+    `).join('');
+  }
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('mobileCitizenName', pkg.penerima?.nama || '-');
+  setTxt('mobileCitizenNik', `NIK: ${formatMaskedNIK(pkg.penerima?.nik)}`);
+  setTxt('mobilePackageId', pkg.id);
+
+  renderMobileTrackingCard(pkg);
+  renderMobileItemsChecklist(pkg);
+
+  const actionContainer = document.getElementById('mobileActionButtonsContainer');
+  if (actionContainer) {
+    if (pkg.status === 'SELESAI') {
+      actionContainer.innerHTML = `
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-300 text-center space-y-2">
+          <div class="text-emerald-700 font-bold text-sm flex items-center justify-center gap-1.5">
+            <span>✅</span> Paket Telah Diterima & Terverifikasi Resmi
+          </div>
+          <button onclick="openBastModal('${pkg.id}')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all">
+            📄 Lihat Bukti Tanda Terima (BAST Digital)
+          </button>
+        </div>
+      `;
+    } else if (pkg.status === 'BERMASALAH') {
+      actionContainer.innerHTML = `
+        <div class="p-3 bg-red-50 rounded-xl border border-red-300 text-center space-y-2">
+          <div class="text-red-700 font-bold text-sm flex items-center justify-center gap-1.5">
+            <span>⚠️</span> Laporan Ketidaksesuaian Sedang Diproses
+          </div>
+          <div class="text-xs text-slate-600">
+            Nomor Tiket: <b>${pkg.laporan?.idTiket || '-'}</b>. Tim posko Kelurahan akan segera menghubungi Anda.
+          </div>
+        </div>
+      `;
+    } else {
+      actionContainer.innerHTML = `
+        <div class="grid grid-cols-2 gap-2.5">
+          <button onclick="openSignatureModal('${pkg.id}')" class="flex flex-col items-center justify-center p-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-bold shadow-md transition-all">
+            <span class="text-lg">✅</span>
+            <span class="text-xs mt-0.5">Sesuai & Terima</span>
+          </button>
+          <button onclick="openReportModal('${pkg.id}')" class="flex flex-col items-center justify-center p-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl font-bold shadow-md transition-all">
+            <span class="text-lg">⚠️</span>
+            <span class="text-xs mt-0.5">Tidak Sesuai / Lapor</span>
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  // Update Mobile GPS Tracker
+  const mapWrap = document.getElementById('mobileMapWrapper');
+  if (pkg.status === 'DALAM_PENGIRIMAN') {
+    if (mapWrap) mapWrap.classList.remove('hidden');
+    if (window.mobileGPSTracker) {
+      window.mobileGPSTracker.init(pkg);
+    }
+  } else {
+    if (mapWrap) mapWrap.classList.add('hidden');
+  }
+}
+
+function renderMobileTrackingCard(pkg) {
+  const container = document.getElementById('mobileTimelineContainer');
+  if (!container) return;
+
+  const steps = [
+    { key: "DIBUAT", label: "Didaftarkan di Dinsos", desc: pkg.createdAt || '' },
+    { key: "DITERIMA_KELURAHAN", label: "Tiba di Posko Kelurahan", desc: pkg.status === 'DIBUAT' ? 'Menunggu kiriman' : 'Terkonfirmasi scan' },
+    { key: "DALAM_PENGIRIMAN", label: "Kurir Menuju Alamat", desc: pkg.kurir ? `${pkg.kurir.nama} (ETA: ${pkg.kurir.eta})` : 'Menunggu jadwal armada' },
+    { key: "SELESAI", label: "Paket Diterima Warga", desc: pkg.status === 'SELESAI' ? 'Terverifikasi Berita Acara Digital' : (pkg.status === 'BERMASALAH' ? 'Ada Kendala Dilaporkan' : 'Verifikasi saat kurir tiba') }
+  ];
+
+  const statusOrder = ["DIBUAT", "DITERIMA_KELURAHAN", "DALAM_PENGIRIMAN", "SELESAI"];
+  let activeIdx = statusOrder.indexOf(pkg.status);
+  if (pkg.status === 'BERMASALAH') activeIdx = 2;
+
+  container.innerHTML = steps.map((step, idx) => {
+    const isCompleted = idx < activeIdx || (pkg.status === 'SELESAI' && idx === 3);
+    const isCurrent = idx === activeIdx && pkg.status !== 'SELESAI';
+    const isProblem = pkg.status === 'BERMASALAH' && idx === 3;
+
+    let dotClass = "bg-slate-200 border-slate-300 text-slate-400";
+    let lineClass = "bg-slate-200";
+
+    if (isCompleted) {
+      dotClass = "bg-emerald-600 border-emerald-600 text-white";
+      lineClass = "bg-emerald-600";
+    } else if (isCurrent) {
+      dotClass = "bg-blue-600 border-blue-600 text-white animate-pulse";
+    } else if (isProblem) {
+      dotClass = "bg-red-600 border-red-600 text-white";
+    }
+
+    return `
+      <div class="flex items-start gap-3 relative pb-4">
+        ${idx < steps.length - 1 ? `
+          <div class="absolute left-3.5 top-6 bottom-0 w-0.5 ${lineClass}"></div>
+        ` : ''}
+        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 ${dotClass} z-10 shrink-0">
+          ${isCompleted ? '✓' : (idx + 1)}
+        </div>
+        <div class="pt-0.5">
+          <div class="text-xs font-bold text-slate-800">${step.label}</div>
+          <div class="text-[11px] text-slate-500">${step.desc}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMobileItemsChecklist(pkg) {
+  const container = document.getElementById('mobileItemsChecklist');
+  if (!container || !pkg.items) return;
+
+  container.innerHTML = pkg.items.map(item => `
+    <div class="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors">
+      <div class="flex items-center gap-2.5">
+        <div class="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-100 text-emerald-700 text-xs font-bold">
+          ✓
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-800">${item.nama}</div>
+          <div class="text-[11px] text-slate-500">Standar Bantuan Pemerintah RI</div>
+        </div>
+      </div>
+      <div class="text-xs font-extrabold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
+        ${item.jumlah}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ==========================================
+// 🔍 SCAN QR SIMULATOR FOR PENERIMA
+// ==========================================
+function triggerMobileScan() {
+  if (!window.tracesStore) return;
+  const activeCitizenId = window.tracesStore.activeCitizenId;
+  const pkg = window.tracesStore.getPackageById(activeCitizenId);
+  sfx.playBeep();
+
+  const confirmed = confirm(
+    `[SIMULASI SCAN KAMERA QR PENERIMA]\n\n` +
+    `Mendeteksi QR Code pada Kardus Bansos:\n` +
+    `ID Paket: ${pkg ? pkg.id : '-'}\n` +
+    `Penerima: ${pkg?.penerima?.nama || '-'}\n\n` +
+    `Lanjutkan ke Pemeriksaan & Verifikasi Fisik Isi Paket?`
+  );
+
+  if (confirmed) {
+    sfx.playSuccess();
+    document.getElementById('mobileVerificationSection')?.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+// ==========================================
+// ✍️ VERIFIKASI SUKSES & TANDA TANGAN DIGITAL
+// ==========================================
+let currentSignPkgId = null;
+
+function openSignatureModal(pkgId) {
+  currentSignPkgId = pkgId;
+  if (!window.tracesStore) return;
+  const pkg = window.tracesStore.getPackageById(pkgId);
+  if (!pkg) return;
+
+  const nameEl = document.getElementById('signModalPenerimaNama');
+  const pkgEl = document.getElementById('signModalPackageId');
+  if (nameEl) nameEl.innerText = pkg.penerima?.nama || '-';
+  if (pkgEl) pkgEl.innerText = pkg.id;
+
+  const modal = document.getElementById('signatureModal');
+  if (modal) modal.classList.remove('hidden');
+
+  // Inisialisasi kanvas setelah modal terbuka
+  setTimeout(() => {
+    if (signPad) {
+      signPad.init();
+      signPad.clear();
+    }
+  }, 50);
+}
+
+function closeSignatureModal() {
+  const modal = document.getElementById('signatureModal');
+  if (modal) modal.classList.add('hidden');
+  currentSignPkgId = null;
+}
+
+function handleVerifySuccessSubmit() {
+  if (!currentSignPkgId || !window.tracesStore) return;
+
+  let signData = signPad ? signPad.getDataURL() : null;
+  if (!signData) {
+    signData = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='70'><path d='M20 40 Q 50 15 80 40 T 150 35' stroke='%23059669' stroke-width='3' fill='none'/></svg>";
+  }
+
+  const catatan = document.getElementById('signCatatan')?.value || "Bantuan telah diterima utuh dan sesuai rincian.";
+  const res = window.tracesStore.verifySuccess(currentSignPkgId, signData, catatan);
+
+  closeSignatureModal();
+
+  if (res.success) {
+    sfx.playSuccess();
+    triggerConfetti();
+    openBastModal(currentSignPkgId);
+  }
+}
+
+function triggerConfetti() {
+  if (typeof window.confetti === 'function') {
+    try {
+      window.confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    } catch (e) {}
+  }
+}
+
+// ==========================================
+// 📄 BAST DIGITAL MODAL (BERITA ACARA)
+// ==========================================
+function openBastModal(pkgId) {
+  if (!window.tracesStore) return;
+  const pkg = window.tracesStore.getPackageById(pkgId);
+  if (!pkg || !pkg.tandaTerima) return;
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('bastNomor', pkg.tandaTerima.nomorBAST);
+  setTxt('bastWaktu', pkg.tandaTerima.waktuPenerimaan);
+  setTxt('bastNama', pkg.penerima?.nama || '-');
+  setTxt('bastNik', pkg.penerima?.nik || '-');
+  setTxt('bastAlamat', pkg.penerima?.alamat || '-');
+  setTxt('bastKelurahan', pkg.penerima?.kelurahan || '-');
+
+  const itemsList = document.getElementById('bastItemsList');
+  if (itemsList && pkg.items) {
+    itemsList.innerHTML = pkg.items.map(it => `
+      <li class="flex justify-between border-b border-slate-100 py-1 text-xs">
+        <span>${it.nama}</span>
+        <span class="font-bold text-slate-800">${it.jumlah}</span>
+      </li>
+    `).join('');
+  }
+
+  const signImg = document.getElementById('bastSignImage');
+  if (signImg && pkg.tandaTerima.signatureData) {
+    signImg.src = pkg.tandaTerima.signatureData;
+  }
+
+  const qrContainer = document.getElementById('bastQRContainer');
+  if (qrContainer && window.QRHelper) {
+    window.QRHelper.renderQR(qrContainer, `TRACES-BAST|${pkg.tandaTerima.nomorBAST}|${pkg.penerima?.nik}`, 110);
+  }
+
+  document.getElementById('bastModal')?.classList.remove('hidden');
+}
+
+function closeBastModal() {
+  document.getElementById('bastModal')?.classList.add('hidden');
+}
+
+// ==========================================
+// ⚠️ LAPORAN KETIDAKSESUAIAN MODAL
+// ==========================================
+let currentReportPkgId = null;
+
+function openReportModal(pkgId) {
+  currentReportPkgId = pkgId;
+  if (!window.tracesStore) return;
+  const pkg = window.tracesStore.getPackageById(pkgId);
+  if (!pkg) return;
+
+  const idEl = document.getElementById('reportPackageId');
+  const nameEl = document.getElementById('reportPenerimaNama');
+  if (idEl) idEl.innerText = pkg.id;
+  if (nameEl) nameEl.innerText = pkg.penerima?.nama || '-';
+
+  const container = document.getElementById('reportItemsCheckboxContainer');
+  if (container && pkg.items) {
+    container.innerHTML = pkg.items.map(it => `
+      <label class="flex items-center gap-2 p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-xs cursor-pointer">
+        <input type="checkbox" name="itemReport" value="${it.nama}" class="rounded text-red-600 focus:ring-red-500">
+        <span>${it.nama} (${it.jumlah})</span>
+      </label>
+    `).join('');
+  }
+
+  document.getElementById('reportModal')?.classList.remove('hidden');
+}
+
+function closeReportModal() {
+  document.getElementById('reportModal')?.classList.add('hidden');
+  currentReportPkgId = null;
+}
+
+function handleReportIssueSubmit(e) {
+  e.preventDefault();
+  if (!currentReportPkgId || !window.tracesStore) return;
+
+  const form = e.target;
+  const kategori = form.kategoriMasalah?.value || "ISI_KURANG";
+  const kategoriSelect = form.kategoriMasalah;
+  const kategoriTeks = kategoriSelect?.options[kategoriSelect.selectedIndex]?.text || kategori;
+  const keterangan = form.keterangan?.value?.trim() || "Tidak ada rincian tambahan";
+
+  const checkedBoxes = form.querySelectorAll('input[name="itemReport"]:checked');
+  const itemBermasalah = Array.from(checkedBoxes).map(cb => cb.value);
+
+  const fotoUrl = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23fee2e2'/><text x='150' y='95' fill='%23dc2626' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>[BUKTI FOTO KENDALA]</text><text x='150' y='125' fill='%23991b1b' font-family='sans-serif' font-size='12' text-anchor='middle'>" + encodeURIComponent(kategoriTeks) + "</text></svg>";
+
+  const res = window.tracesStore.reportIssue(currentReportPkgId, {
+    kategori,
+    kategoriTeks,
+    itemBermasalah,
+    keterangan,
+    fotoUrl
+  });
+
+  closeReportModal();
+  form.reset();
+
+  if (res.success) {
+    sfx.playAlert();
+    alert(
+      `Laporan Kendala Berhasil Terkirim!\n\n` +
+      `Nomor Tiket: ${res.tiketId}\n` +
+      `Status paket berubah menjadi 'Bermasalah' dan notifikasi prioritas telah dikirimkan ke Dashboard Kelurahan & Dinsos Pusat.`
+    );
+  }
+}
+
+// ==========================================
+// 🛠️ RESOLUSI PENGADUAN MODAL (KELURAHAN)
+// ==========================================
+let currentResolvePkgId = null;
+
+function openResolveModal(pkgId) {
+  currentResolvePkgId = pkgId;
+  if (!window.tracesStore) return;
+  const pkg = window.tracesStore.getPackageById(pkgId);
+  if (!pkg || !pkg.laporan) return;
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('resolveTiketId', pkg.laporan.idTiket);
+  setTxt('resolvePenerimaNama', pkg.penerima?.nama || '-');
+  setTxt('resolveKendala', pkg.laporan.kategoriTeks);
+  setTxt('resolveCatatanWarga', `"${pkg.laporan.keterangan}"`);
+
+  document.getElementById('resolveModal')?.classList.remove('hidden');
+}
+
+function closeResolveModal() {
+  document.getElementById('resolveModal')?.classList.add('hidden');
+  currentResolvePkgId = null;
+}
+
+function handleResolveSubmit() {
+  if (!currentResolvePkgId || !window.tracesStore) return;
+
+  const solusi = document.getElementById('resolveSolusiSelect')?.value || "PAKET_PENGGANTI_DIKIRIM";
+  const catatanAdmin = document.getElementById('resolveCatatanAdmin')?.value?.trim() || "Telah dilakukan penanganan oleh posko Kelurahan.";
+
+  const res = window.tracesStore.resolveIssue(currentResolvePkgId, solusi, catatanAdmin);
+
+  closeResolveModal();
+
+  if (res.success) {
+    sfx.playSuccess();
+    alert(`Laporan Berhasil Ditindaklanjuti!\nStatus: ${solusi}\nAudit blockchain telah mencatat penyelesaian kendala.`);
+  }
+}
+
+// ==========================================
+// 🏷️ QR CODE & STICKER LABEL MODAL
+// ==========================================
+function openStickerModal(pkgId) {
+  if (!window.tracesStore) return;
+  const pkg = window.tracesStore.getPackageById(pkgId);
+  if (!pkg) return;
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('stickerId', pkg.id);
+  setTxt('stickerNama', pkg.penerima?.nama || '-');
+  setTxt('stickerNik', formatMaskedNIK(pkg.penerima?.nik));
+  setTxt('stickerKelurahan', pkg.penerima?.kelurahan || '-');
+  setTxt('stickerAlamat', pkg.penerima?.alamat || '-');
+
+  const itemsList = document.getElementById('stickerItemsList');
+  if (itemsList && pkg.items) {
+    itemsList.innerHTML = pkg.items.map(it => `
+      <div class="flex justify-between border-b border-dashed border-slate-200 py-0.5 text-xs">
+        <span>• ${it.nama}</span>
+        <span class="font-bold text-slate-800">${it.jumlah}</span>
+      </div>
+    `).join('');
+  }
+
+  const qrContainer = document.getElementById('stickerQRContainer');
+  if (qrContainer && window.QRHelper) {
+    window.QRHelper.renderQR(qrContainer, `TRACES|${pkg.id}|${pkg.penerima?.nik}`, 140);
+  }
+
+  const barcodeTarget = document.getElementById('stickerBarcodeTarget');
+  if (barcodeTarget && window.QRHelper) {
+    window.QRHelper.renderBarcode(barcodeTarget, pkg.barcode || pkg.id, { width: 2, height: 42 });
+  }
+
+  document.getElementById('stickerModal')?.classList.remove('hidden');
+}
+
+function closeStickerModal() {
+  document.getElementById('stickerModal')?.classList.add('hidden');
+}
+
+// ==========================================
+// 📜 BLOCKCHAIN AUDIT TRAIL MODAL
+// ==========================================
+function openAuditModal(pkgId) {
+  if (!window.tracesStore) return;
+  const pkg = window.tracesStore.getPackageById(pkgId);
+  if (!pkg) return;
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('auditModalPackageId', pkg.id);
+  setTxt('auditModalPenerima', `${pkg.penerima?.nama || '-'} (Kel. ${pkg.penerima?.kelurahan || '-'})`);
+
+  const list = document.getElementById('auditTrailList');
+  if (list && pkg.auditTrail) {
+    list.innerHTML = pkg.auditTrail.map((block, idx) => `
+      <div class="relative pl-6 pb-6 border-l-2 ${idx === pkg.auditTrail.length - 1 ? 'border-emerald-500' : 'border-blue-400'} last:pb-0">
+        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full ${idx === pkg.auditTrail.length - 1 ? 'bg-emerald-500 ring-4 ring-emerald-100' : 'bg-blue-600'}"></div>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-mono-code font-bold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded">
+              BLOCK #${block.block}: ${block.aksi}
+            </span>
+            <span class="text-slate-500">${block.waktu}</span>
+          </div>
+          <div class="text-xs font-semibold text-slate-700">Aktor: ${block.aktor}</div>
+          <div class="text-xs text-slate-600">${block.deskripsi}</div>
+          <div class="pt-1 border-t border-slate-200/60 font-mono-code text-[11px] text-slate-400 truncate">
+            Hash: <span class="text-blue-700 font-bold">${block.hash}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('auditModal')?.classList.remove('hidden');
+}
+
+function closeAuditModal() {
+  document.getElementById('auditModal')?.classList.add('hidden');
+}
+
+// --- HELPER UTILITIES ---
+function getStatusBadgeHTML(status) {
+  switch (status) {
+    case 'DIBUAT':
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold badge-dibuat">📦 Dibuat</span>`;
+    case 'DITERIMA_KELURAHAN':
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold badge-kelurahan">🏢 Di Kelurahan</span>`;
+    case 'DALAM_PENGIRIMAN':
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold badge-pengiriman">🚚 Pengiriman (GPS)</span>`;
+    case 'SELESAI':
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold badge-selesai">✅ Selesai Terverifikasi</span>`;
+    case 'BERMASALAH':
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold badge-bermasalah">⚠️ Bermasalah</span>`;
+    default:
+      return `<span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-600">${status}</span>`;
+  }
+}
+
+function formatMaskedNIK(nik) {
+  if (!nik || nik.length < 10) return nik || '-';
+  return nik.substring(0, 6) + "******" + nik.substring(nik.length - 4);
+}
+
+  </script>
+
 </body>
 </html>
