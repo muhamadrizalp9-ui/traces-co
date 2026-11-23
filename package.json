@@ -1,1 +1,12 @@
-{"name": "traces-co", "version": "1.0.0"}
+{
+  "name": "traces-co",
+  "version": "1.0.0",
+  "description": "Sistem Verifikasi dan Pelacakan Distribusi Bansos Sembako",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo Build ready",
+    "start": "node server.js"
+  },
+  "keywords": ["bansos", "tracking", "qr-code", "gps"],
+  "author": "TRACES-CO Team"
+}
