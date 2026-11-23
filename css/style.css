@@ -1,0 +1,173 @@
+/* TRACES-CO - Government Blue & Emerald Design System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --gov-navy-950: #07162c;
+  --gov-navy-900: #0b2545;
+  --gov-blue-800: #134074;
+  --gov-blue-600: #1d4ed8;
+  --gov-blue-500: #2563eb;
+  --emerald-600: #059669;
+  --emerald-500: #10b981;
+  --emerald-100: #d1fae5;
+  --emerald-50: #ecfdf5;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.font-mono-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Status Badges */
+.badge-dibuat {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.badge-kelurahan {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.badge-pengiriman {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-selesai {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-bermasalah {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* Smartphone Mockup Frame */
+.smartphone-wrapper {
+  max-width: 412px;
+  margin: 0 auto;
+  border-radius: 44px;
+  background-color: #0f172a;
+  padding: 12px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.smartphone-screen {
+  background-color: #ffffff;
+  border-radius: 34px;
+  overflow: hidden;
+  position: relative;
+  min-height: 720px;
+  display: flex;
+  flex-direction: column;
+}
+
+.smartphone-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 22px;
+  background-color: #0f172a;
+  border-radius: 20px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.smartphone-island .camera {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+}
+
+.smartphone-island .sensor {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #0f172a;
+}
+
+/* Signature Pad Canvas */
+#signatureCanvas {
+  touch-action: none;
+  cursor: crosshair;
+  background-color: #f8fafc;
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+}
+
+/* Scan Viewfinder Radar Animation */
+.viewfinder-laser {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  box-shadow: 0 0 12px #10b981;
+  animation: scanLaser 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes scanLaser {
+  0% { top: 5%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 95%; opacity: 0; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print Stylesheet for Sticker Label & BAST Slip */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printStickerArea, #printStickerArea *,
+  #printBastArea, #printBastArea * {
+    visibility: visible;
+  }
+  #printStickerArea, #printBastArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

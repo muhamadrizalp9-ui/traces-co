@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRACES-CO - Sistem Pelacakan & Verifikasi Distribusi Bansos Sembako</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gov: {
+              950: '#07162C',
+              900: '#0B2545',
+              800: '#134074',
+              700: '#1D4ED8',
+              600: '#2563EB',
+              50: '#F0F6FF'
+            },
+            emerald: {
+              900: '#064e3b',
+              800: '#065f46',
+              700: '#047857',
+              600: '#059669',
+              500: '#10b981',
+              100: '#d1fae5',
+              50: '#ecfdf5'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- QR Code & Barcode CDN Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- ======================================================== -->
+  <!-- 🏛️ TOP GLOBAL HEADER & ROLE SELECTOR -->
+  <!-- ======================================================== -->
+  <header class="bg-gov-900 text-white border-b border-gov-800 sticky top-0 z-40 shadow-lg">
+    <!-- Top Bar Kemensos RI -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between border-b border-gov-800/80 text-xs">
+      <div class="flex items-center gap-2 text-slate-300">
+        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-[10px] font-bold text-white">RI</span>
+        <span class="font-medium tracking-wide">KEMENTERIAN SOSIAL REPUBLIK INDONESIA &bull; DIREKTORAT JENDERAL PERLINDUNGAN SOSIAL</span>
+      </div>
+      <div class="flex items-center gap-3 mt-1 sm:mt-0 text-slate-300">
+        <button id="soundToggleBtn" class="hover:text-emerald-400 transition-colors flex items-center gap-1 font-medium">
+          🔊 Suara Aktif
+        </button>
+        <span class="text-gov-800">|</span>
+        <button id="resetDemoBtn" class="hover:text-amber-400 transition-colors flex items-center gap-1 font-medium" title="Kembalikan semua paket ke 5 contoh awal">
+          🔄 Reset Demo
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <!-- Logo Branding -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-gov-700 to-emerald-500 p-0.5 shadow-md flex items-center justify-center">
+          <div class="w-full h-full bg-gov-950 rounded-[14px] flex items-center justify-center">
+            <span class="text-xl">📦</span>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-extrabold tracking-tight text-white">TRACES-CO</h1>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              v2.6 LIVE
+            </span>
+          </div>
+          <p class="text-xs text-slate-300 font-normal">
+            Sistem Verifikasi & Pelacakan Distribusi Bansos Sembako (QR & GPS Tracking)
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Role Switcher Buttons -->
+      <div class="flex items-center bg-gov-950/80 p-1.5 rounded-2xl border border-gov-800 shadow-inner overflow-x-auto">
+        <button data-role-btn="PEMERINTAH" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white shadow-md transition-all whitespace-nowrap">
+          <span>🏛️</span>
+          <span>Pemerintah (Pusat)</span>
+        </button>
+        <button data-role-btn="KELURAHAN" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-gov-800 transition-all whitespace-nowrap">
+          <span>🏢</span>
+          <span>Kelurahan (Distribusi)</span>
+        </button>
+        <button data-role-btn="PENERIMA" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-gov-800 transition-all whitespace-nowrap">
+          <span>📱</span>
+          <span>Penerima Bantuan</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- MAIN CONTENT AREA -->
+  <!-- ======================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+    <!-- ======================================================== -->
+    <!-- 🏛️ ROLE 1: PEMERINTAH (DASHBOARD PUSAT) -->
+    <!-- ======================================================== -->
+    <section id="viewPemerintah" class="space-y-6">
+      <!-- Section Header -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider">
+              Dashboard Eksekutif
+            </span>
+            <span class="text-xs text-slate-500">Pusat Data Logistik Bantuan Sosial Nasional</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mt-1">Pengendalian & Audit Distribusi Bansos</h2>
+          <p class="text-xs sm:text-sm text-slate-600">
+            Daftarkan paket baru, cetak label QR/Barcode unik, dan pantau validitas blockchain audit trail secara transparan.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="#formRegistrasiPaket" class="px-4 py-2 bg-gov-700 hover:bg-gov-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+            <span>➕</span> Input Paket Baru
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Paket</div>
+          <div id="statTotal" class="text-2xl font-extrabold text-gov-900 mt-1">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Seluruh kuota tahap ini</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-blue-200/80 shadow-sm">
+          <div class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Dibuat di Pusat</div>
+          <div id="statDibuat" class="text-2xl font-extrabold text-blue-700 mt-1">0</div>
+          <div class="text-[10px] text-blue-500 mt-0.5">Siap dikirim ke kelurahan</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-indigo-200/80 shadow-sm">
+          <div class="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Di Kelurahan</div>
+          <div id="statKelurahan" class="text-2xl font-extrabold text-indigo-700 mt-1">0</div>
+          <div class="text-[10px] text-indigo-500 mt-0.5">Telah di-scan posko</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-sm">
+          <div class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Dalam Pengiriman</div>
+          <div id="statPengiriman" class="text-2xl font-extrabold text-amber-700 mt-1">0</div>
+          <div class="text-[10px] text-amber-500 mt-0.5">Kurir live GPS aktif</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-emerald-300 shadow-sm bg-emerald-50/20">
+          <div class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Selesai (BAST)</div>
+          <div id="statSelesai" class="text-2xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-[10px] text-emerald-600 font-semibold mt-0.5">Terverifikasi 100%</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-rose-300 shadow-sm bg-rose-50/20">
+          <div class="text-[11px] font-bold text-rose-700 uppercase tracking-wider">Bermasalah</div>
+          <div id="statMasalah" class="text-2xl font-extrabold text-rose-600 mt-1">0</div>
+          <div class="text-[10px] text-rose-500 font-semibold mt-0.5">Laporan warga aktif</div>
+        </div>
+      </div>
+
+      <!-- Form Input Data Paket Bansos Baru -->
+      <div id="formRegistrasiPaket" class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
+              📝
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Form Registrasi Paket Bansos Baru</h3>
+              <p class="text-xs text-slate-500">Auto-generate QR code unik dan hash audit blockchain secara instan</p>
+            </div>
+          </div>
+          <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full border border-emerald-200">
+            Standar Bantuan Sembako 2026
+          </span>
+        </div>
+
+        <form id="formNewPackage" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Penerima *</label>
+              <input type="text" name="namaPenerima" required placeholder="Contoh: Ibu Rohayati" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">NIK (16 Digit Angka) *</label>
+              <input type="text" name="nik" required maxlength="16" placeholder="317101xxxxxxxxxx" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono-code transition-all">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Kelurahan Tujuan *</label>
+              <select name="kelurahan" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                <option value="Menteng">Kelurahan Menteng</option>
+                <option value="Gambir">Kelurahan Gambir</option>
+                <option value="Senen">Kelurahan Senen</option>
+                <option value="Cempaka Putih">Kelurahan Cempaka Putih</option>
+                <option value="Tanah Abang">Kelurahan Tanah Abang</option>
+                <option value="Johar Baru">Kelurahan Johar Baru</option>
+                <option value="Kebon Sirih">Kelurahan Kebon Sirih</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Alamat Rumah Lengkap (RT/RW) *</label>
+              <input type="text" name="alamat" required placeholder="Jl. Kramat Jaya No. 12, RT 04 / RW 02" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nomor HP / WhatsApp</label>
+                <input type="tel" name="noHp" placeholder="0812-xxxx-xxxx" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Operator Penginput</label>
+                <input type="text" name="operator" value="Operator Kemensos RI" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+              </div>
+            </div>
+          </div>
+
+          <!-- Rincian Isi Paket Default & Tambahan -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+              <span>🌾</span> Daftar Komoditas Bantuan Sembako yang Dialokasikan:
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 font-medium text-slate-700">
+                <span class="text-emerald-600 font-bold">✓</span> Beras Premium (5 kg) [Default]
+              </div>
+              <div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 font-medium text-slate-700">
+                <span class="text-emerald-600 font-bold">✓</span> Minyak Goreng Kemasan (1 Liter) [Default]
+              </div>
+              <div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 font-medium text-slate-700">
+                <span class="text-emerald-600 font-bold">✓</span> Gula Pasir Kristal (1 kg) [Default]
+              </div>
+            </div>
+            <div class="flex items-center gap-4 mt-3 pt-2.5 border-t border-slate-200 text-xs">
+              <span class="text-slate-500 font-medium">Item Tambahan:</span>
+              <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-700">
+                <input type="checkbox" name="itemSarden" class="rounded text-blue-600 focus:ring-blue-500">
+                <span>+ Sarden 2 Kaleng</span>
+              </label>
+              <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-700">
+                <input type="checkbox" name="itemMie" class="rounded text-blue-600 focus:ring-blue-500">
+                <span>+ Mie Instan 10 Bks</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="reset" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors">
+              Bersihkan Form
+            </button>
+            <button type="submit" class="px-5 py-2.5 bg-gov-700 hover:bg-gov-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+              <span>⚡</span> Generate ID Unik, QR Code & Simpan Paket
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabel Monitoring Status Seluruh Paket -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Monitoring Distribusi & Audit Trail Paket Bansos</h3>
+            <p class="text-xs text-slate-500">Pelacakan status end-to-end dengan ledger hash terenkripsi</p>
+          </div>
+
+          <!-- Filters -->
+          <div class="flex flex-wrap items-center gap-2">
+            <input type="text" id="tableSearchInput" placeholder="🔍 Cari Nama, NIK, ID..." class="px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none w-44">
+
+            <select id="tableKelurahanFilter" class="px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="ALL">Semua Kelurahan</option>
+              <option value="Menteng">Menteng</option>
+              <option value="Gambir">Gambir</option>
+              <option value="Senen">Senen</option>
+              <option value="Cempaka Putih">Cempaka Putih</option>
+            </select>
+
+            <select id="tableStatusFilter" class="px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="ALL">Semua Status</option>
+              <option value="DIBUAT">Dibuat</option>
+              <option value="DITERIMA_KELURAHAN">Di Kelurahan</option>
+              <option value="DALAM_PENGIRIMAN">Dalam Pengiriman</option>
+              <option value="SELESAI">Selesai</option>
+              <option value="BERMASALAH">Bermasalah</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 text-[11px] font-bold text-slate-600 uppercase border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">ID Paket</th>
+                <th class="py-3 px-4">Penerima & NIK</th>
+                <th class="py-3 px-4">Kelurahan</th>
+                <th class="py-3 px-4">Isi Sembako</th>
+                <th class="py-3 px-4">Status Distribusi</th>
+                <th class="py-3 px-4">Audit Hash</th>
+                <th class="py-3 px-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="packagesTableBody" class="divide-y divide-slate-100 text-xs">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 🏢 ROLE 2: KELURAHAN (ADMIN DISTRIBUSI) -->
+    <!-- ======================================================== -->
+    <section id="viewKelurahan" class="space-y-6 hidden">
+      <!-- Section Header -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 text-xs font-bold uppercase tracking-wider">
+              Posko Distribusi Kelurahan
+            </span>
+            <span class="text-xs text-slate-500">Wilayah Kerja: DKI Jakarta Pusat</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mt-1">Pusat Penerimaan & Pengawalan GPS Bansos</h2>
+          <p class="text-xs sm:text-sm text-slate-600">
+            Scan paket masuk dari gudang pusat, tugaskan kurir pengantar, dan pantau rute GPS langsung ke alamat warga.
+          </p>
+        </div>
+      </div>
+
+      <!-- Grid 2 Kolom: Scan & Dispatch -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 1. Simulasi Scan Paket Masuk dari Pusat -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📥</span>
+              <h3 class="text-base font-bold text-slate-900">Scan QR / Barcode Paket Masuk</h3>
+            </div>
+            <span class="text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full font-bold">
+              Dari Gudang Pusat
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">
+            Klik tombol <b>"Scan Terima"</b> pada paket yang tiba di kantor Kelurahan untuk mengubah status menjadi <b>"Diterima Kelurahan"</b> dan mengaktifkan modul pelacakan GPS:
+          </p>
+
+          <div id="kelurahanPendingScanList" class="space-y-2.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- 2. Dispatch Kurir Menuju Alamat Warga -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🚚</span>
+              <h3 class="text-base font-bold text-slate-900">Tugaskan Kurir / Armada Logistik</h3>
+            </div>
+            <span class="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-bold">
+              Siap Kirim ke Warga
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">
+            Paket yang sudah diverifikasi di Kelurahan siap diberangkatkan menuju alamat penerima bantuan:
+          </p>
+
+          <div id="kelurahanReadyDispatchList" class="space-y-2.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Peta Simulasi GPS Tracking Interaktif -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛰️</span>
+              <h3 class="text-base font-bold text-slate-900">Pelacakan Real-Time Armada GPS Kurir</h3>
+            </div>
+            <p class="text-xs text-slate-500">Pemantauan rute pergerakan dari Kantor Kelurahan menuju lokasi rumah penerima bansos</p>
+          </div>
+
+          <!-- Paket Selector for Map -->
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-bold text-slate-600 whitespace-nowrap">Pilih Paket Aktif:</label>
+            <select id="kelurahanPkgSelect" class="px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+              <!-- Rendered via JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Map Canvas Container -->
+        <div class="relative w-full h-80 rounded-2xl overflow-hidden border border-slate-200 bg-slate-900">
+          <div id="mapCanvas" class="w-full h-full z-10"></div>
+        </div>
+
+        <!-- Telemetry HUD & Simulation Actions -->
+        <div class="space-y-3">
+          <div id="telemetryPanel">
+            <!-- Rendered via JS -->
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-xs font-bold text-slate-700">🎮 Kontrol Simulasi Pergerakan Kurir:</span>
+            <div class="flex items-center gap-2">
+              <button id="btnGpsStep" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all">
+                ⏩ Simulasi Maju (+25%)
+              </button>
+              <button id="btnGpsArrive" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all">
+                🏁 Kurir Tiba di Rumah
+              </button>
+              <button id="btnGpsReset" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-all">
+                🔄 Reset Posisi
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Kotak Masuk Laporan Masalah dari Warga -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold text-lg">
+              ⚠️
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Kotak Masuk Aduan & Laporan Ketidaksesuaian Warga</h3>
+              <p class="text-xs text-slate-500">Laporan langsung dari aplikasi penerima jika isi paket kurang, rusak, atau kadaluarsa</p>
+            </div>
+          </div>
+          <span id="incidentBadgeCount" class="px-2.5 py-1 rounded-full bg-red-600 text-white text-xs font-bold">
+            0
+          </span>
+        </div>
+
+        <div id="kelurahanIncidentInbox" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 📱 ROLE 3: PENERIMA BANTUAN (MOBILE APP) -->
+    <!-- ======================================================== -->
+    <section id="viewPenerima" class="space-y-4 hidden">
+      <!-- Top Banner Selector & Frame Toggle -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xl">
+            📱
+          </div>
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-slate-900">Aplikasi Penerima Bantuan Sosial</h2>
+            <p class="text-xs text-slate-500">Simulasikan pengalaman warga menerima paket sembako di genggaman</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-600">Simulasi Akun:</span>
+            <select id="citizenSelect" class="px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+              <!-- Rendered via JS -->
+            </select>
+          </div>
+
+          <button id="toggleMobileFrameBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition-all">
+            🖥️ Tampilan Lebar
+          </button>
+        </div>
+      </div>
+
+      <!-- Smartphone Container Wrapper -->
+      <div id="mobileAppContainer" class="smartphone-wrapper">
+        <div class="smartphone-screen p-4 space-y-4">
+          
+          <!-- Dynamic Island / Smartphone Bezel Notch -->
+          <div class="smartphone-island">
+            <div class="camera"></div>
+            <div class="sensor"></div>
+          </div>
+
+          <!-- App Mobile Header -->
+          <div class="pt-5 flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-[11px] text-slate-400 font-medium">BANSOS KITA &bull; KEMENSOS RI</div>
+              <h3 id="mobileCitizenName" class="text-base font-extrabold text-slate-900">Ibu Siti Aminah</h3>
+              <div id="mobileCitizenNik" class="text-xs text-emerald-700 font-mono-code font-bold">NIK: 317101******0002</div>
+            </div>
+            <div class="text-right">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Warga Terdaftar
+              </span>
+              <div id="mobilePackageId" class="text-[10px] text-slate-400 font-mono-code mt-1">TRC-2026-JKT-101</div>
+            </div>
+          </div>
+
+          <!-- Banner Alokasi Bantuan Aktif -->
+          <div class="bg-gradient-to-r from-gov-900 to-gov-800 text-white p-3.5 rounded-2xl shadow-md">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-emerald-300 font-bold">Bansos Sembako Tahap IV - 2026</span>
+              <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">Gratis Tanpa Biaya</span>
+            </div>
+            <div class="text-sm font-bold">Program Penyaluran Langsung Pangan Pokok</div>
+            <div class="text-[11px] text-slate-300 mt-0.5">Disalurkan oleh Kementerian Sosial RI bersama Posko Kelurahan</div>
+          </div>
+
+          <!-- Pelacakan Real-Time Perjalanan Paket (Timeline) -->
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span>📍</span> Status Perjalanan Paket
+              </h4>
+              <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live Tracking
+              </span>
+            </div>
+
+            <!-- Mini Map Wrapper (Jika Kurir OTW) -->
+            <div id="mobileMapWrapper" class="hidden">
+              <div class="w-full h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-900 relative">
+                <div id="mobileMapCanvas" class="w-full h-full"></div>
+              </div>
+              <div id="mobileTelemetryPanel" class="mt-2"></div>
+            </div>
+
+            <div id="mobileTimelineContainer" class="pt-1">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Tombol Scan QR Paket Diterima -->
+          <div class="bg-gov-50 p-3.5 rounded-2xl border border-blue-200 text-center space-y-2">
+            <div class="text-xs font-bold text-gov-900">Kurir Sudah Berada di Depan Rumah Anda?</div>
+            <p class="text-[11px] text-slate-600">
+              Pindai QR Code pada stiker kardus bansos untuk membuka formulir verifikasi isi bantuan:
+            </p>
+            <button onclick="triggerMobileScan()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-extrabold shadow-md transition-all flex items-center justify-center gap-2">
+              <span class="text-base">📷</span>
+              <span>Scan QR / Barcode Paket Diterima</span>
+            </button>
+          </div>
+
+          <!-- Seksi Verifikasi Isi Paket Bansos -->
+          <div id="mobileVerificationSection" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span>📦</span> Rincian Bantuan yang Wajib Diterima
+              </h4>
+              <span class="text-[10px] text-slate-500 font-semibold">Cek Fisik Segel</span>
+            </div>
+
+            <div id="mobileItemsChecklist" class="space-y-2">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Catatan Edukasi -->
+            <div class="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200 leading-relaxed">
+              💡 <b>Pemberitahuan Warga:</b> Pastikan kemasan beras tidak berlubang, minyak goreng tidak bocor, dan timbangan sesuai sebelum menandatangani tanda terima.
+            </div>
+
+            <!-- Tombol Aksi Verifikasi: HIJAU vs MERAH -->
+            <div id="mobileActionButtonsContainer" class="pt-2">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- MODALS & DIALOG OVERLAYS -->
+  <!-- ======================================================== -->
+
+  <!-- 1. MODAL LABEL QR & BARCODE PAKET (PRINTABLE) -->
+  <div id="stickerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="p-4 bg-gov-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>🏷️</span>
+          <h3 class="text-sm font-bold">Stiker Label Resmi Bansos RI</h3>
+        </div>
+        <button onclick="closeStickerModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <!-- Printable Area -->
+      <div id="printStickerArea" class="p-5 space-y-4 bg-white text-slate-800">
+        <!-- Header Label -->
+        <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between">
+          <div>
+            <div class="text-[10px] font-extrabold text-gov-900 tracking-wider">REPUBLIK INDONESIA</div>
+            <div class="text-xs font-black text-slate-900">PAKET BANTUAN SOSIAL SEMBAKO</div>
+            <div class="text-[9px] text-slate-500">DIREKTORAT LOGISTIK KEMENSOS RI</div>
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-gov-900 text-white flex items-center justify-center font-bold text-xs">
+            RI
+          </div>
+        </div>
+
+        <!-- Detail Penerima -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span class="text-[10px] text-slate-400 block">ID PAKET</span>
+            <span id="stickerId" class="font-mono-code font-bold text-gov-900">TRC-2026-JKT-101</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">KELURAHAN TUJUAN</span>
+            <span id="stickerKelurahan" class="font-bold text-slate-800">Menteng</span>
+          </div>
+          <div class="col-span-2">
+            <span class="text-[10px] text-slate-400 block">NAMA PENERIMA / NIK</span>
+            <span id="stickerNama" class="font-bold text-slate-900">Ibu Siti Aminah</span>
+            <span class="text-slate-500 font-mono-code ml-1">(<span id="stickerNik">317101******0002</span>)</span>
+          </div>
+          <div class="col-span-2">
+            <span class="text-[10px] text-slate-400 block">ALAMAT PENGANTARAN</span>
+            <span id="stickerAlamat" class="text-slate-700 text-[11px]">Jl. Surabaya No. 14</span>
+          </div>
+        </div>
+
+        <!-- Items Checklist Mini -->
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+          <div class="text-[10px] font-bold text-slate-700 uppercase mb-1">Rincian Komoditas:</div>
+          <div id="stickerItemsList" class="space-y-0.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- QR Code & Barcode Display -->
+        <div class="flex flex-col items-center justify-center gap-2 pt-2 border-t border-dashed border-slate-300">
+          <div id="stickerQRContainer" class="p-1.5 bg-white rounded-xl shadow-sm border border-slate-200"></div>
+          <div id="stickerBarcodeTarget" class="w-full flex justify-center"></div>
+          <div class="text-[9px] text-slate-400 text-center font-mono-code">
+            SECURITY HASH: 0x8f2a1b9c7d4e3f20 &bull; DILARANG DIPERJUALBELIKAN
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5 no-print">
+        <button onclick="window.print()" class="px-4 py-2 bg-gov-700 hover:bg-gov-600 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5">
+          <span>🖨️</span> Cetak Label Stiker
+        </button>
+        <button onclick="closeStickerModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODAL TANDA TANGAN DIGITAL (PENERIMA) -->
+  <div id="signatureModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="p-4 bg-emerald-700 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>✍️</span>
+          <h3 class="text-sm font-bold">Tanda Tangan Digital Penerima Bansos</h3>
+        </div>
+        <button onclick="closeSignatureModal()" class="text-emerald-200 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="text-xs text-slate-600">
+          Saya atas nama <b id="signModalPenerimaNama" class="text-slate-900">Ibu Siti Aminah</b> menyatakan bahwa paket bansos sembako (<span id="signModalPackageId" class="font-mono-code font-bold text-gov-800">TRC-2026-JKT-101</span>) telah diterima utuh dan sesuai rincian.
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-700">Bubuhkan Tanda Tangan di Kolom Bawah:</label>
+            <button id="btnClearSign" class="text-xs text-rose-600 hover:text-rose-800 font-bold">
+              Hapus / Ulangi
+            </button>
+          </div>
+          <canvas id="signatureCanvas" class="w-full h-36 rounded-xl"></canvas>
+          <div class="text-[10px] text-slate-400 mt-1 italic text-center">Gunakan jari tangan di layar sentuh atau kursor mouse</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Tambahan (Opsional):</label>
+          <input type="text" id="signCatatan" placeholder="Contoh: Diterima langsung dalam keadaan baik" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+        <button onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+          Batal
+        </button>
+        <button id="btnConfirmReceive" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5">
+          <span>✅</span> Konfirmasi Terima & Buka BAST
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL BAST DIGITAL RESMI (BERITA ACARA SERAH TERIMA) -->
+  <div id="bastModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="p-4 bg-emerald-800 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>📄</span>
+          <h3 class="text-sm font-bold">Berita Acara Serah Terima (BAST Digital)</h3>
+        </div>
+        <button onclick="closeBastModal()" class="text-emerald-200 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <!-- Printable BAST Slip -->
+      <div id="printBastArea" class="p-6 space-y-4 bg-white text-slate-800 text-xs">
+        <!-- Garuda / Kemensos Header -->
+        <div class="text-center border-b-2 border-emerald-700 pb-3">
+          <div class="text-xs font-black text-gov-900 tracking-wider">KEMENTERIAN SOSIAL REPUBLIK INDONESIA</div>
+          <div class="text-sm font-extrabold text-emerald-800">TANDA TERIMA DIGITAL BANTUAN SOSIAL SEMBAKO</div>
+          <div class="text-[10px] text-slate-500">Nomor BAST: <b id="bastNomor" class="font-mono-code text-slate-800">BAST-BANSOS/2026/XI/0912</b></div>
+        </div>
+
+        <!-- Verified Emerald Watermark Ribbon -->
+        <div class="bg-emerald-50 border border-emerald-300 p-2.5 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-2 text-emerald-800 font-bold">
+            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">✓</span>
+            <span>STATUS: TERVERIFIKASI RESMI 100%</span>
+          </div>
+          <span id="bastWaktu" class="text-[10px] text-slate-500 font-medium">23 Nov 2026</span>
+        </div>
+
+        <!-- Data Penerima -->
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div>
+            <span class="text-[10px] text-slate-400 block">NAMA PENERIMA</span>
+            <span id="bastNama" class="font-bold text-slate-900">Bpk. Bambang</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">NIK PENERIMA</span>
+            <span id="bastNik" class="font-mono-code font-bold text-slate-900">3171041006800007</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">KELURAHAN</span>
+            <span id="bastKelurahan" class="font-semibold text-slate-800">Cempaka Putih</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">ALAMAT</span>
+            <span id="bastAlamat" class="text-slate-700 truncate">Jl. Cempaka Putih</span>
+          </div>
+        </div>
+
+        <!-- Rincian Komoditas -->
+        <div>
+          <div class="font-bold text-slate-800 mb-1">Rincian Barang Diterima Lengkap:</div>
+          <ul id="bastItemsList" class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1">
+            <!-- Rendered via JS -->
+          </ul>
+        </div>
+
+        <!-- Signature & Verification QR -->
+        <div class="pt-2 border-t border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-slate-400 block mb-1">Tanda Tangan Digital Warga:</span>
+            <div class="w-40 h-16 border border-emerald-300 rounded-lg bg-emerald-50/40 p-1 flex items-center justify-center">
+              <img id="bastSignImage" class="max-h-full max-w-full object-contain" alt="Tanda Tangan">
+            </div>
+            <span class="text-[9px] text-emerald-700 font-bold block mt-1">Telah Ditandatangani</span>
+          </div>
+
+          <div class="text-right flex flex-col items-end">
+            <span class="text-[10px] text-slate-400 block mb-1">Verifikasi Digital:</span>
+            <div id="bastQRContainer" class="p-1 bg-white rounded-lg border border-slate-200 shadow-sm"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5 no-print">
+        <button onclick="window.print()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5">
+          <span>🖨️</span> Cetak Bukti BAST
+        </button>
+        <button onclick="closeBastModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+          Selesai / Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL LAPORAN KETIDAKSESUAIAN (PENERIMA) -->
+  <div id="reportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="p-4 bg-rose-700 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>⚠️</span>
+          <h3 class="text-sm font-bold">Laporan Ketidaksesuaian Isi Paket Bansos</h3>
+        </div>
+        <button onclick="closeReportModal()" class="text-rose-200 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <form id="formReportIssue" class="p-5 space-y-4">
+        <div class="text-xs text-slate-600">
+          Melaporkan kendala untuk paket <b id="reportPackageId" class="font-mono-code text-gov-900">TRC-2026-JKT-101</b> penerima <b id="reportPenerimaNama" class="text-slate-900">Ibu Siti Aminah</b>:
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kategori Masalah Utama *</label>
+          <select name="kategoriMasalah" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 outline-none">
+            <option value="ISI_KURANG">Isi Paket Kurang (Ada Item Hilang)</option>
+            <option value="BARANG_RUSAK">Barang Rusak / Pecah / Hancur</option>
+            <option value="KEMASAN_BOCOR">Kemasan Bocor / Terbuka / Basah</option>
+            <option value="KADALUARSA">Makanan Kadaluarsa / Berbau Apek</option>
+            <option value="TIMBANGAN_TIDAK_PAS">Berat Timbangan Beras Tidak Pas</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Item yang Mengalami Kendala:</label>
+          <div id="reportItemsCheckboxContainer" class="space-y-1.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Keluhan Detail *</label>
+          <textarea name="keterangan" rows="2" required placeholder="Contoh: Kemasan minyak goreng robek di sudut dan tumpah..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Bukti Foto Kendala (Simulasi Lampiran):</label>
+          <div class="p-3 bg-rose-50 border border-dashed border-rose-300 rounded-xl text-center">
+            <span class="text-xs text-rose-700 font-bold">📸 Foto Otomatis Dilampirkan</span>
+            <div class="text-[10px] text-slate-500 mt-0.5">Sistem secara otomatis menyertakan tag visual kamera kendala barang bansos</div>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
+          🔔 Laporan Anda akan langsung masuk ke Dashboard Kelurahan dan Kementerian Sosial untuk investigasi & pengiriman paket pengganti.
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button type="button" onclick="closeReportModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5">
+            <span>🚨</span> Kirim Laporan Komplain
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. MODAL RESOLUSI PENGADUAN (KELURAHAN) -->
+  <div id="resolveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>🛠️</span>
+          <h3 class="text-sm font-bold">Tindak Lanjut Aduan Warga (Posko Kelurahan)</h3>
+        </div>
+        <button onclick="closeResolveModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs">
+        <div class="bg-red-50 p-3 rounded-xl border border-red-200">
+          <div class="flex justify-between items-center mb-1">
+            <span id="resolveTiketId" class="font-mono-code font-bold text-red-700">LAP-2026-7821</span>
+            <span class="text-red-600 font-semibold">Prioritas Tindak Lanjut</span>
+          </div>
+          <div class="font-bold text-slate-800" id="resolvePenerimaNama">Bpk. Hendra Gunawan</div>
+          <div class="text-red-700 font-medium" id="resolveKendala">Kemasan Bocor</div>
+          <div class="text-slate-600 italic mt-1" id="resolveCatatanWarga">"Minyak goreng bocor..."</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Tindakan Penyelesaian:</label>
+          <select id="resolveSolusiSelect" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="PAKET_PENGGANTI_DIKIRIM">Kirimkan Paket Sembako Pengganti Baru</option>
+            <option value="SELESAI_DAMAI">Verifikasi Ulang & Selesaikan Aduan (Selesai)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Tindakan Petugas Kelurahan:</label>
+          <textarea id="resolveCatatanAdmin" rows="2" placeholder="Contoh: Petugas telah menyerahkan 1 pouch minyak baru sebagai pengganti." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+        <button onclick="closeResolveModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+          Batal
+        </button>
+        <button onclick="handleResolveSubmit()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all">
+          Simpan Solusi & Update Status
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODAL BLOCKCHAIN AUDIT TRAIL EXPLORER -->
+  <div id="auditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="p-4 bg-gov-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>📜</span>
+          <h3 class="text-sm font-bold">Audit Trail Blockchain & Immutable Ledger</h3>
+        </div>
+        <button onclick="closeAuditModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <div>
+            <div class="text-[10px] text-slate-400">ID BANSOS</div>
+            <div id="auditModalPackageId" class="font-mono-code font-bold text-gov-900">TRC-2026-JKT-101</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] text-slate-400">PENERIMA</div>
+            <div id="auditModalPenerima" class="font-bold text-slate-800">Ibu Siti Aminah</div>
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-600">
+          Catatan riwayat status paket yang tercatat secara kriptografis dan tidak dapat dimanipulasi:
+        </div>
+
+        <div id="auditTrailList" class="space-y-1">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+        <button onclick="closeAuditModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+          Tutup Explorer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- FOOTER -->
+  <!-- ======================================================== -->
+  <footer class="bg-gov-950 text-slate-400 border-t border-gov-900 py-6 text-xs mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="w-6 h-6 rounded-lg bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-[11px]">
+          TC
+        </span>
+        <span class="text-slate-300 font-semibold">TRACES-CO</span>
+        <span>&bull;</span>
+        <span>Sistem Pelacakan Bansos Terintegrasi</span>
+      </div>
+      <div>
+        Transparansi, Akuntabilitas, & Anti-Fraud Distribusi Pangan Nasional
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/qr-helper.js"></script>
+  <script src="js/map-tracker.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
